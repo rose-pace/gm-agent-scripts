@@ -1,0 +1,28 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Current File with Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/conversion-script.py",
+            "console": "integratedTerminal",
+            "args": [
+                "c:\\Users\\final\\OneDrive\\gaming\\Starcrash Setting\\Villains\\Tenebria Gloomveil - the Nightshade Queen.docx",
+                "c:\\Users\\final\\OneDrive\\gaming\\Starcrash Setting\\Setting Details\\villains\\Tenebria_Gloomveil.yaml",
+                "-c",
+                "villains",
+                "-t",
+                "statblock",
+                "bbeg",
+                "planar",
+                "giant",
+                "shadow",
+                "boss"
+            ]
+        }
+    ]
+}

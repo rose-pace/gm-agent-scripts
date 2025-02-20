@@ -1,0 +1,205 @@
+# Schema for D&D 5e Stat Blocks
+schema_version: "1.0"
+schema_type: "creature_statblock"
+
+# Document metadata
+metadata:
+  name: string  # Full name of creature
+  title: string | null  # Optional title/epithet
+  version: string  # Document version
+  date_created: date
+  last_modified: date
+  source: string  # Source book or document
+  collection: string | null  # Collection or series name (e.g., "npcs", "monsters", "villains")
+  tags: 
+    - string  # List of categorization tags
+
+# Basic creature information
+creature_info:
+  size: enum  # [Tiny, Small, Medium, Large, Huge, Gargantuan]
+  type: string  # Base creature type
+  subtypes: 
+    - string  # Optional subtypes in parentheses
+  alignment: string
+  cr:
+    rating: number | fraction  # Challenge rating number
+    xp: integer  # Experience points
+  
+# Core statistics
+core_stats:
+  armor_class:
+    value: integer
+    type: string  # e.g., "natural armor", "plate", etc.
+  hit_points:
+    average: integer
+    roll: string  # e.g., "27d12 + 150"
+  speed:
+    walk: integer | null
+    fly: integer | null
+    swim: integer | null
+    burrow: integer | null
+    climb: integer | null
+    hover: boolean
+    units: string  # Usually "ft."
+    special: string | null  # Any special movement notes
+
+# Ability scores
+abilities:
+  strength:
+    score: integer
+    modifier: integer
+  dexterity:
+    score: integer
+    modifier: integer
+  constitution:
+    score: integer
+    modifier: integer
+  intelligence:
+    score: integer
+    modifier: integer
+  wisdom:
+    score: integer
+    modifier: integer
+  charisma:
+    score: integer
+    modifier: integer
+
+# Proficiencies and other stats
+proficiencies:
+  saving_throws:
+    - ability: string
+      modifier: integer
+  skills:
+    - name: string
+      modifier: integer
+  
+# Defensive traits
+defenses:
+  damage_resistances:
+    - string
+  damage_immunities:
+    - string
+  condition_immunities:
+    - string
+  
+# Senses and communication
+senses:
+  darkvision: integer | null
+  blindsight: integer | null
+  tremorsense: integer | null
+  truesight: integer | null
+  passive_perception: integer
+  special: 
+    - string  # Additional special senses
+
+languages:
+  spoken:
+    - string
+  telepathy: integer | null
+  special: string | null  # Special communication abilities
+
+# Special traits
+traits:
+  - name: string
+    description: string
+    usage: string | null  # Usage limitations like "3/day"
+    
+# Spellcasting (if applicable)
+  spellcasting:
+    type: string  # e.g., "Innate", "Regular", "Pact Magic"
+    ability: string  # Spellcasting ability
+    dc: integer
+    attack_bonus: integer
+    base_modifier: integer  # The ability modifier used for spellcasting
+    special_bonuses:  # For unusual cases where spell attacks get additional bonuses
+      - description: string
+        value: integer
+  spells:
+    at_will:
+      - name: string
+        notes: string | null
+    spell_slots:
+      - level: integer
+        slots: integer
+        spells:
+          - name: string
+            notes: string | null
+    limited_use:
+      - frequency: string  # e.g., "3/day"
+        spells:
+          - name: string
+            notes: string | null
+
+# Actions
+actions:
+  standard:
+    - name: string
+      description: string
+      attack:
+        type: string | null  # [melee_weapon, ranged_weapon, melee_spell, ranged_spell]
+        bonus: integer | null
+        ability_used: string | null  # For weapon attacks
+        magical_bonus: integer | null  # For weapon attacks only
+        is_finesse: boolean | null  # For melee weapon attacks
+        reach: string | null
+        range: string | null
+      hit:
+        damage: string | null  # Damage dice/formula
+        damage_type: string | null
+        additional_effects: string | null
+      usage: string | null  # Usage limitations
+  
+  bonus_actions:
+    - name: string
+      description: string
+      usage: string | null
+  
+  reactions:
+    - name: string
+      description: string
+      usage: string | null
+
+# Legendary actions (if applicable)
+legendary_actions:
+  slots_per_round: integer
+  description: string
+  actions:
+    - name: string
+      description: string
+      cost: integer
+      usage: string | null
+
+# Lair actions (if applicable)
+lair_actions:
+  initiative_count: integer
+  description: string
+  actions:
+    - name: string
+      description: string
+      usage: string | null
+
+# Regional effects (if applicable)
+regional_effects:
+  range: string  # Area of effect
+  duration: string  # How long effects last
+  effects:
+    - name: string
+      description: string
+      mechanics:
+        save_dc: integer | null
+        save_type: string | null
+        effects: string
+
+# Descriptive text
+description:
+  appearance: string | null
+  personality: string | null
+  background: string | null
+  tactics: string | null
+
+# Additional information
+additional_info:
+  variant_rules: 
+    - string
+  notes:
+    - string

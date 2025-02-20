@@ -1,0 +1,345 @@
+# Validation Rules for D&D 5e Stat Block Schema
+validation_rules:
+  metadata:
+    required_fields:
+      - name
+      - version
+      - date_created
+    constraints:
+      name:
+        - type: string
+        - min_length: 1
+        - max_length: 100
+      version:
+        - pattern: "^\\d+\\.\\d+$"  # Must match format like "1.0"
+      date_created:
+        - format: "YYYY-MM-DD"
+        - not_future: true
+
+  creature_info:
+    required_fields:
+      - size
+      - type
+      - alignment
+      - cr
+    constraints:
+      size:
+        - enum:
+            - Tiny
+            - Small
+            - Medium
+            - Large
+            - Huge
+            - Gargantuan
+      type:
+        - enum:
+            - aberration
+            - beast
+            - celestial
+            - construct
+            - dragon
+            - elemental
+            - fey
+            - fiend
+            - giant
+            - humanoid
+            - monstrosity
+            - ooze
+            - plant
+            - undead
+      alignment:
+        - pattern: "^(lawful|neutral|chaotic)? ?(good|neutral|evil)?$"
+        - allow: "unaligned"
+      cr:
+        rating:
+          - type: number
+          - min: 0
+          - max: 30
+          - allow_fractions: true
+          - valid_fractions:
+              - "1/8"
+              - "1/4"
+              - "1/2"
+        xp:
+          - type: integer
+          - min: 0
+          - max: 155000
+          - validate_against_cr: true  # Must match CR-to-XP table
+
+  core_stats:
+    required_fields:
+      - armor_class
+      - hit_points
+      - speed
+    constraints:
+      armor_class:
+        value:
+          - type: integer
+          - min: 0
+          - max: 30
+      hit_points:
+        average:
+          - type: integer
+          - min: 1
+          - validate_against_roll: true  # Must match average of hit dice
+        roll:
+          - pattern: "^\\d+d\\d+(?:\\s*[+-]\\s*\\d+)?$"  # e.g., "27d12 + 150"
+      speed:
+        walk:
+          - type: integer
+          - multiple_of: 5
+          - min: 0
+          - max: 120
+        fly:
+          - type: integer
+          - multiple_of: 5
+          - min: 0
+          - max: 120
+        swim:
+          - type: integer
+          - multiple_of: 5
+          - min: 0
+          - max: 120
+        burrow:
+          - type: integer
+          - multiple_of: 5
+          - min: 0
+          - max: 120
+        climb:
+          - type: integer
+          - multiple_of: 5
+          - min: 0
+          - max: 120
+
+  abilities:
+    required_fields:
+      - strength
+      - dexterity
+      - constitution
+      - intelligence
+      - wisdom
+      - charisma
+    constraints:
+      for_each_ability:
+        score:
+          - type: integer
+          - min: 1
+          - max: 30
+        modifier:
+          - type: integer
+          - validate_formula: "(score - 10) / 2"  # Must match ability score formula
+
+  proficiencies:
+    constraints:
+      saving_throws:
+        ability:
+          - enum:
+              - strength
+              - dexterity
+              - constitution
+              - intelligence
+              - wisdom
+              - charisma
+        modifier:
+          - type: integer
+          - validate_proficiency_range: true  # Must be within valid range based on proficiency bonus for CR
+      skills:
+        name:
+          - enum:  # Standard 5e skills
+              - Acrobatics
+              - Animal Handling
+              - Arcana
+              - Athletics
+              - Deception
+              - History
+              - Insight
+              - Intimidation
+              - Investigation
+              - Medicine
+              - Nature
+              - Perception
+              - Performance
+              - Persuasion
+              - Religion
+              - Sleight of Hand
+              - Stealth
+              - Survival
+        modifier:
+          - type: integer
+          - validate_proficiency_range: true  # Must be within valid range (including possible expertise)
+
+  defenses:
+    constraints:
+      damage_types:
+        - enum:
+            - acid
+            - bludgeoning
+            - cold
+            - fire
+            - force
+            - lightning
+            - necrotic
+            - piercing
+            - poison
+            - psychic
+            - radiant
+            - slashing
+            - thunder
+      conditions:
+        - enum:
+            - blinded
+            - charmed
+            - deafened
+            - exhaustion
+            - frightened
+            - grappled
+            - incapacitated
+            - invisible
+            - paralyzed
+            - petrified
+            - poisoned
+            - prone
+            - restrained
+            - stunned
+            - unconscious
+
+  senses:
+    constraints:
+      distance_values:
+        - type: integer
+        - multiple_of: 5
+        - min: 0
+        - max: 120
+      passive_perception:
+        - type: integer
+        - min: 0
+        - max: 30
+        - validate_against_wisdom: true  # Must match Wisdom modifier + 10
+
+  spellcasting:
+    constraints:
+      type:
+        - enum:
+            - Innate
+            - Regular
+            - Pact Magic
+      ability:
+        - enum:
+            - Intelligence
+            - Wisdom
+            - Charisma
+      dc:
+        - type: integer
+        - min: 0
+        - max: 30
+        - validate_against_ability: true  # Must match 8 + proficiency + ability modifier
+      spell_slots:
+        level:
+          - type: integer
+          - min: 1
+          - max: 9
+        slots:
+          - type: integer
+          - min: 1
+          - max: 4
+      limited_use:
+        frequency:
+          - pattern: "^\\d+/(?:day|short rest|long rest)$"
+
+  actions:
+    constraints:
+      attack_type:
+        - enum:
+            - melee_weapon
+            - ranged_weapon
+            - melee_spell
+            - ranged_spell
+      attack_bonus:
+        - type: integer
+        - validate_attack_bonus_range: true  # Validation varies based on attack_type
+      reach:
+        - pattern: "^\\d+ ft\\.?$"
+      range:
+        - pattern: "^\\d+/\\d+ ft\\.?$|^\\d+ ft\\.?$"
+      magical_bonus:
+        - type: integer
+        - min: 0
+        - max: 3  # Standard maximum for magical weapons
+        - applies_to: ["melee_weapon", "ranged_weapon"]  # Only apply to weapon attacks
+
+  legendary_actions:
+    constraints:
+      slots_per_round:
+        - type: integer
+        - min: 1
+        - max: 5
+      cost:
+        - type: integer
+        - min: 1
+        - max: 3
+
+  lair_actions:
+    constraints:
+      initiative_count:
+        - type: integer
+        - min: 0
+        - max: 20
+
+  regional_effects:
+    constraints:
+      range:
+        - pattern: "^\\d+ (?:feet|miles)$"
+      save_dc:
+        - type: integer
+        - min: 0
+        - max: 30
+
+# Cross-validation rules
+cross_validation:
+  - rule: "proficiency_bonus_range"
+    description: "Validate that proficiency-based bonuses fall within valid ranges:"
+    details:
+      saving_throws:
+        - min: "ability_modifier + proficiency_bonus"
+        - max: "ability_modifier + proficiency_bonus"  # Saving throws don't get expertise
+      
+      skills:
+        - min: "ability_modifier + proficiency_bonus"
+        - max: "ability_modifier + (proficiency_bonus * 2)"  # Allow for expertise
+      
+      attack_bonus:
+        weapon_attacks:
+          - min: "ability_modifier + proficiency_bonus"
+          - max: "ability_modifier + proficiency_bonus + 3"  # Standard maximum magical bonus
+          - ability_score: 
+              melee: ["strength", "dexterity"]  # Allow either for finesse weapons
+              ranged: "dexterity"
+        
+        spell_attacks:
+          - equals: "spellcasting.attack_bonus"  # Must match creature's spell attack bonus
+          - validate_formula: "proficiency_bonus + spellcasting_ability_modifier"
+  
+  - rule: "spell_attack_consistency"
+    description: "Validate that all spell attacks use the same attack bonus"
+    details:
+      - all_spell_attacks_must_match: true
+      - applies_to: ["melee_spell", "ranged_spell"]
+  
+  - rule: "spell_save_dc_matches_ability"
+    description: "Validate that spell save DCs match spellcasting ability and proficiency bonus"
+  
+  - rule: "hit_points_match_hit_dice"
+    description: "Validate that average HP matches hit dice formula"
+  
+  - rule: "passive_perception_matches_wisdom"
+    description: "Validate that passive Perception matches Wisdom modifier + 10"
+
+# Required sections based on creature type
+required_sections_by_type:
+  spellcaster:
+    - spellcasting
+  legendary:
+    - legendary_actions
+  lair:
+    - lair_actions
+    - regional_effects
