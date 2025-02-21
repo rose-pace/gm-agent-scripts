@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional
+import unicodedata
 import re
 import yaml
 from datetime import datetime
@@ -31,10 +32,10 @@ class DocxStatBlockConverter:
         for paragraph in doc.paragraphs:
             # Check if this is a main header
             if self._is_main_header(paragraph):
-                sections['header'] = paragraph.text.strip()
+                sections['header'] = self._normalize_text(paragraph.text)
             # Check if this is a subheader
             elif self._is_subheader(paragraph):
-                sections['subheader'] = paragraph.text.strip()
+                sections['subheader'] = self._normalize_text(paragraph.text)
             # Check if this is a section header
             elif self._is_section_header(paragraph):
                 # Save previous section
@@ -214,7 +215,7 @@ class DocxStatBlockConverter:
     def _process_core_stats(self, paragraphs: List[Paragraph]) -> None:
         """Process core statistics section."""
         for para in paragraphs:
-            text = para.text.strip()
+            text = self._normalize_text(para.text)
             
             if text.startswith("Armor Class"):
                 ac_match = re.match(r"Armor Class (\d+)(?: \(([\w\s,]+)\))?", text)
@@ -263,7 +264,7 @@ class DocxStatBlockConverter:
         skills = []
         
         for para in paragraphs:
-            text = para.text.strip()
+            text = self._normalize_text(para.text)
             # Parse ability scores
             matches = re.finditer(r'(\w{3})\s+(\d+)\s*\(([+-]\d+)\)', text)
             for match in matches:
@@ -303,6 +304,10 @@ class DocxStatBlockConverter:
             "skills": skills if skills else None
         })
 
+    def _normalize_text(self, text: str) -> str:
+        """Strip text and remove non-breaking spaces."""
+        return unicodedata.normalize('NFKC', text).strip()
+
     def _is_run_bold(self, run) -> bool:
         """
         Check if a run is bold using multiple methods.
@@ -324,12 +329,13 @@ class DocxStatBlockConverter:
         name = ''
         for run in paragraph.runs:
             if self._is_run_bold(run):
-                name += run.text
+                name += self._normalize_text(run.text)
             else:
                 break
         
-        description = paragraph.text[len(name):].strip(' .:')
-        return name.strip(' .:'), description
+        name = name.strip(' .:')
+        description = self._normalize_text(paragraph.text[len(name):]).strip(' .:')
+        return name, description
 
     def _process_actions(self, paragraphs: List[Paragraph], action_type: str = "standard") -> List[dict[str, Any]]:
         actions = []
@@ -410,7 +416,7 @@ class DocxStatBlockConverter:
                         }
             
             elif current_action:
-                current_action["description"] += f"\n{para.text}"
+                current_action["description"] += f"\n{self._normalize_text(para.text)}"
         
         # Add last action
         if current_action:
@@ -424,7 +430,7 @@ class DocxStatBlockConverter:
             return
         
         # Extract slots per round from description
-        slots_match = re.search(r"can take (\d+) legendary actions?", paragraphs[0].text)
+        slots_match = re.search(r"can take (\d+) legendary actions?", self._normalize_text(paragraphs[0].text))
         slots = int(slots_match.group(1)) if slots_match else 3  # Default to 3
         
         legendary_actions = {
@@ -458,13 +464,13 @@ class DocxStatBlockConverter:
             return
             
         lair_actions = {
-            "description": paragraphs[0].text,
+            "description": self._normalize_text(paragraphs[0].text),
             "initiative_count": 20,
             "actions": []
         }
         
         # Try to find initiative count
-        initiative_match = re.search(r"on initiative count (\d+)", paragraphs[0].text.lower())
+        initiative_match = re.search(r"on initiative count (\d+)", self._normalize_text(paragraphs[0].text.lower()))
         if initiative_match:
             lair_actions["initiative_count"] = int(initiative_match.group(1))
         
@@ -482,7 +488,7 @@ class DocxStatBlockConverter:
                     "usage": None  # Required field
                 }
             elif current_action:
-                current_action["description"] += f"\n{para.text}"
+                current_action["description"] += f"\n{self._normalize_text(para.text)}"
         
         # Add last action
         if current_action:
@@ -493,7 +499,7 @@ class DocxStatBlockConverter:
     def _process_defenses(self, paragraphs: List[Paragraph]) -> None:
         """Process damage and condition immunities/resistances."""
         for para in paragraphs:
-            text = para.text.strip()
+            text = self._normalize_text(para.text)
             
             if text.startswith("Damage Resistances"):
                 resistances = text.replace("Damage Resistances", "").strip()
@@ -510,7 +516,7 @@ class DocxStatBlockConverter:
     def _process_senses_and_languages(self, paragraphs: List[Paragraph]) -> None:
         """Process senses and languages sections."""
         for para in paragraphs:
-            text = para.text.strip()
+            text = self._normalize_text(para.text)
             
             if text.startswith("Senses"):
                 senses = {}
@@ -556,7 +562,7 @@ class DocxStatBlockConverter:
                     "description": description
                 }
             elif current_trait:
-                current_trait["description"] += f"\n{para.text}"
+                current_trait["description"] += f"\n{self._normalize_text(para.text)}"
         
         if current_trait:
             traits.append(current_trait)
@@ -588,7 +594,7 @@ class DocxStatBlockConverter:
                     "mechanics": None
                 }
             elif current_effect:
-                current_effect["description"] += f"\n{para.text}"
+                current_effect["description"] += f"\n{self._normalize_text(para.text)}"
         
         if current_effect:
             regional_effects["effects"].append(current_effect)
