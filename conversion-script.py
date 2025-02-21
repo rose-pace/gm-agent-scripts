@@ -1,23 +1,8 @@
-from typing import Dict, List, Optional, Union
-import re
 import yaml
-from dataclasses import dataclass
-from datetime import datetime
-from pathlib import Path
-
-# Document processing
-from docx import Document  # python-docx for reading .docx files
-from docx.text.paragraph import Paragraph
-from docx.text.run import Run
 
 # Data validation and processing
-from pydantic import BaseModel, Field, validator  # For data validation
-import pandas as pd  # For data manipulation if needed
 from rich import print  # For better console output
-from rich.console import Console
-from rich.table import Table
 
-from statblock_validator import StatBlockValidator
 from docx_statblock_converter import DocxStatBlockConverter
 
 # Usage example:

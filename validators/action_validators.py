@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field, field_validator, ValidationInfo
-from typing import List, Optional, Union
+from pydantic import BaseModel, field_validator, ValidationInfo
+from typing import List, Optional
 from enum import Enum
 
 class WeaponType(str, Enum):

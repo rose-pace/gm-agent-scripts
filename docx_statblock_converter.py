@@ -1,7 +1,6 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 import unicodedata
 import re
-import yaml
 from datetime import datetime
 from pathlib import Path
 from docx import Document
@@ -377,7 +376,7 @@ class DocxStatBlockConverter:
                     
                     # Base attack info
                     attack_info = {
-                        "weapon_type": weapon_or_spell,
+                        "weapon_type": weapon_or_spell.value,
                         "is_melee": 'melee' in description.lower(),
                         "is_ranged": 'range' in description.lower(),
                         "bonus": int(attack_match.group(1)),
