@@ -11,6 +11,7 @@
 - Prefer single quotes for strings
 - Add concise and descriptive comments to clarify logic
 - Use pydantic for all validation
+- Prefer string comparisons in lowercase if case is not needed
 
 ## Files to reference:
 1. statblock-schema.yaml
