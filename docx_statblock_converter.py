@@ -8,20 +8,15 @@ from docx.text.paragraph import Paragraph
 from rich.console import Console
 from rich.table import Table
 from statblock_validator import StatBlockValidator
+from validators.action_validators import WeaponType  # Add this import
 
 class DocxStatBlockConverter:
-    def __init__(self, validation_rules_path: str, collection: str = None, tags: List[str] = None):
+    def __init__(self, collection: str = None, tags: List[str] = None):
         """Initialize converter with validation rules."""
-        self.validation_rules = self._load_validation_rules(validation_rules_path)
         self.collection = collection
         self.tags = tags or []
         self.current_creature = {}
         self.console = Console()
-
-    def _load_validation_rules(self, path: str) -> Dict:
-        """Load validation rules from YAML file."""
-        with open(path, 'r') as f:
-            return yaml.safe_load(f)
 
     def extract_text_from_docx(self, docx_path: str) -> Dict[str, List[Paragraph]]:
         """
@@ -146,6 +141,9 @@ class DocxStatBlockConverter:
             self._process_lair_actions(sections['lair_actions'])
         if 'regional_effects' in sections:
             self._process_regional_effects(sections['regional_effects'])
+
+        # Validate converted data
+        self._validate_converted_data()
         
         return self.current_creature
 
@@ -160,7 +158,7 @@ class DocxStatBlockConverter:
             self.console.print(e)
             raise
 
-    def output_conversion_report(self, output_path: str) -> None:
+    def output_conversion_report(self) -> None:
         """
         Generate a detailed report of the conversion process.
         """
@@ -179,10 +177,6 @@ class DocxStatBlockConverter:
         
         # Print to console
         self.console.print(table)
-        
-        # Save to file
-        with open(output_path, 'w') as f:
-            yaml.dump(self.current_creature, f, sort_keys=False, allow_unicode=True)
 
     # Constants and patterns
     SECTION_MARKERS = {
@@ -262,44 +256,6 @@ class DocxStatBlockConverter:
                 
                 self.current_creature["speed"] = speeds
 
-    def _parse_damage_with_formatting(self, formatted_text: List[Dict]) -> Dict:
-        """Parse damage information while preserving formatting for damage types."""
-        damage_info = {
-            "damage_rolls": [],
-            "damage_types": []
-        }
-        
-        current_roll = ""
-        current_type = ""
-        
-        for part in formatted_text:
-            text = part.get('text', '').strip()
-            
-            # Skip if no text
-            if not text:
-                continue
-                
-            # Check for damage roll pattern (e.g., "2d6 + 3")
-            roll_match = re.match(r"(\d+d\d+(?:\s*[+-]\s*\d+)?)", text)
-            if roll_match:
-                if current_roll:
-                    damage_info["damage_rolls"].append(current_roll)
-                current_roll = roll_match.group(1)
-            
-            # Check for damage type (usually italicized)
-            elif part.get('italic'):
-                if current_type:
-                    damage_info["damage_types"].append(current_type)
-                current_type = text.lower()
-        
-        # Add any remaining roll or type
-        if current_roll:
-            damage_info["damage_rolls"].append(current_roll)
-        if current_type:
-            damage_info["damage_types"].append(current_type)
-            
-        return damage_info
-
     def _process_abilities(self, paragraphs: List[Paragraph]) -> None:
         """Process abilities section - let Pydantic handle validation."""
         abilities = {}
@@ -363,7 +319,6 @@ class DocxStatBlockConverter:
         return name.strip(' .:'), description
 
     def _process_actions(self, paragraphs: List[Paragraph], action_type: str = "standard") -> List[dict[str, Any]]:
-        """Process actions section - let Action model handle validation."""
         actions = []
         current_action = None
         
@@ -383,7 +338,7 @@ class DocxStatBlockConverter:
                     "usage": None
                 }
                 
-                # Parse attack if present - updated pattern for dual-type attacks
+                # Parse attack if present
                 attack_match = re.search(
                     r'(?:Melee or Ranged|(?:Melee|Ranged)) '
                     r'(?:Weapon|Spell) Attack:\s*([+-]\d+) to hit'
@@ -393,16 +348,26 @@ class DocxStatBlockConverter:
                 )
                 
                 if attack_match:
-                    is_dual_type = 'or' in description.split('Attack:')[0]
-                    weapon_or_spell = 'Spell' if 'Spell Attack' in description else 'Weapon'
+                    weapon_or_spell = WeaponType.SPELL if 'Spell Attack' in description else WeaponType.WEAPON
                     
                     # Base attack info
                     attack_info = {
+                        "weapon_type": weapon_or_spell,
+                        "is_melee": 'Melee' in description,
+                        "is_ranged": 'Ranged' in description or 'range' in description.lower(),
                         "bonus": int(attack_match.group(1)),
                         "ability_used": None,
                         "magical_bonus": None,
-                        "is_finesse": False
+                        "is_finesse": False,
+                        "reach": None,
+                        "range": None
                     }
+                    
+                    # Add reach/range based on attack types
+                    if attack_info["is_melee"]:
+                        attack_info["reach"] = attack_match.group(2)
+                    if attack_info["is_ranged"]:
+                        attack_info["range"] = attack_match.group(3) if attack_match.group(3) else attack_match.group(2)
                     
                     # Check for magical weapon bonus
                     magic_match = re.search(r'(?:with a )?([+-]\d+) magical', description.lower())
@@ -410,36 +375,17 @@ class DocxStatBlockConverter:
                         attack_info["magical_bonus"] = int(magic_match.group(1))
                     
                     # Handle weapon-specific attributes
-                    if weapon_or_spell == 'Weapon':
+                    if weapon_or_spell == WeaponType.WEAPON:
                         # Check for finesse property
                         if 'finesse' in description.lower():
                             attack_info["is_finesse"] = True
                             attack_info["ability_used"] = 'dex'
                         else:
-                            attack_info["ability_used"] = 'dex' if 'ranged' in description.lower() else 'str'
+                            attack_info["ability_used"] = 'dex' if attack_info["is_ranged"] else 'str'
                     
-                    # Create one or two attacks based on type
-                    attacks = []
+                    current_action["attack"] = attack_info
                     
-                    if is_dual_type or 'Melee' in description:
-                        melee_attack = attack_info.copy()
-                        melee_attack.update({
-                            "type": f"melee_{weapon_or_spell.lower()}",
-                            "reach": attack_match.group(2) if attack_match.group(2) else None,
-                            "range": None
-                        })
-                        attacks.append(melee_attack)
-                    
-                    if is_dual_type or 'Ranged' in description:
-                        ranged_attack = attack_info.copy()
-                        ranged_attack.update({
-                            "type": f"ranged_{weapon_or_spell.lower()}",
-                            "reach": None,
-                            "range": attack_match.group(3) if attack_match.group(3) else attack_match.group(2)
-                        })
-                        attacks.append(ranged_attack)
-                    
-                    # Parse damage - same for both attack types
+                    # Parse damage
                     damage_match = re.search(r'Hit:\s*\d+\s*\(([\dd+\s-]+)\)\s*([\w\s,]+)\s*damage', description)
                     if damage_match:
                         # Check for additional effects after damage
@@ -449,18 +395,6 @@ class DocxStatBlockConverter:
                             "damage_type": damage_match.group(2).strip(),
                             "additional_effects": additional_match.group(1).strip() if additional_match else None
                         }
-                    
-                    # For dual-type attacks, create two separate action entries
-                    if len(attacks) > 1:
-                        for idx, atk in enumerate(attacks):
-                            if idx > 0:
-                                new_action = current_action.copy()
-                                new_action["attack"] = atk
-                                actions.append(new_action)
-                            else:
-                                current_action["attack"] = atk
-                    else:
-                        current_action["attack"] = attacks[0]
             
             elif current_action:
                 current_action["description"] += f"\n{para.text}"
@@ -497,7 +431,7 @@ class DocxStatBlockConverter:
                 
                 # Add required usage field
                 legendary_actions["actions"].append({
-                    "name": name.strip(' .:'),
+                    "name": name.strip(),
                     "description": description,
                     "cost": cost,
                     "usage": None  # Required field
@@ -517,7 +451,7 @@ class DocxStatBlockConverter:
         }
         
         # Try to find initiative count
-        initiative_match = re.search(r"On initiative count (\d+)", paragraphs[0].text)
+        initiative_match = re.search(r"on initiative count (\d+)", paragraphs[0].text.lower())
         if initiative_match:
             lair_actions["initiative_count"] = int(initiative_match.group(1))
         
@@ -531,7 +465,8 @@ class DocxStatBlockConverter:
                 
                 current_action = {
                     "name": name,
-                    "description": description
+                    "description": description,
+                    "usage": None  # Required field
                 }
             elif current_action:
                 current_action["description"] += f"\n{para.text}"
@@ -636,7 +571,8 @@ class DocxStatBlockConverter:
                 
                 current_effect = {
                     "name": name.strip,
-                    "description": description
+                    "description": description,
+                    "mechanics": None
                 }
             elif current_effect:
                 current_effect["description"] += f"\n{para.text}"

@@ -136,13 +136,15 @@ actions:
     - name: string
       description: string
       attack:
-        type: string | null  # [melee_weapon, ranged_weapon, melee_spell, ranged_spell]
-        bonus: integer | null
-        ability_used: string | null  # For weapon attacks
-        magical_bonus: integer | null  # For weapon attacks only
-        is_finesse: boolean | null  # For melee weapon attacks
-        reach: string | null
-        range: string | null
+        weapon_type: string  # [weapon, spell]
+        is_melee: boolean
+        is_ranged: boolean
+        bonus: integer
+        ability_used: string | null
+        magical_bonus: integer | null  # Only for weapon attacks
+        is_finesse: boolean | null  # Only for melee weapon attacks
+        reach: string | null  # Only when is_melee is true
+        range: string | null  # Only when is_ranged is true
       hit:
         damage: string | null  # Damage dice/formula
         damage_type: string | null

@@ -29,14 +29,13 @@ if __name__ == "__main__":
     parser.add_argument('output', help='Output YAML file')
     parser.add_argument('-c', '--collection', dest='collection', help='Collection name for the stat blocks', default='monsters')
     parser.add_argument('-t', '--tags', dest='tags', help='Tags for the stat blocks', nargs='*', default=[])
-    parser.add_argument('--rules', help='Validation rules YAML file', default='statblock-validation.yaml')
     parser.add_argument('--report', help='Generate detailed conversion report', action='store_true')
     
     args = parser.parse_args()
     print(f"Converting {args.input} to {args.output} using rules from {args.rules}")
     
     # Initialize converter
-    converter = DocxStatBlockConverter(args.rules, args.collection, args.tags)
+    converter = DocxStatBlockConverter(args.collection, args.tags)
     
     try:
         # Convert document
@@ -44,10 +43,10 @@ if __name__ == "__main__":
         
         # Save output
         if args.report:
-            converter.output_conversion_report(args.output)
-        else:
-            with open(args.output, 'w') as f:
-                yaml.dump(converted_data, f, sort_keys=False, allow_unicode=True)
+            converter.output_conversion_report()
+
+        with open(args.output, 'w') as f:
+            yaml.dump(converted_data, f, sort_keys=False, allow_unicode=True)
                 
         print(f"Successfully converted {args.input} to {args.output}")
         

@@ -248,24 +248,41 @@ validation_rules:
 
   actions:
     constraints:
-      attack_type:
+      weapon_type:
         - enum:
-            - melee_weapon
-            - ranged_weapon
-            - melee_spell
-            - ranged_spell
-      attack_bonus:
-        - type: integer
-        - validate_attack_bonus_range: true  # Validation varies based on attack_type
+            - weapon
+            - spell
+      is_melee:
+        - type: boolean
+      is_ranged:
+        - type: boolean
+      attack_combination:
+        - rule: "at_least_one_attack_type"
+          description: "Attack must be either melee, ranged, or both"
+          validation: "is_melee == true || is_ranged == true"
       reach:
         - pattern: "^\\d+ ft\\.?$"
+        - requires: "is_melee == true"
       range:
         - pattern: "^\\d+/\\d+ ft\\.?$|^\\d+ ft\\.?$"
+        - requires: "is_ranged == true"
+      attack_bonus:
+        - type: integer
+        - validate_attack_bonus_range: true  # Validation varies based on weapon_type
       magical_bonus:
         - type: integer
         - min: 0
         - max: 3  # Standard maximum for magical weapons
-        - applies_to: ["melee_weapon", "ranged_weapon"]  # Only apply to weapon attacks
+        - applies_to: "weapon_type == weapon"  # Only apply to weapon attacks
+      ability_used:
+        - enum:
+            - str
+            - dex
+        - applies_to: "weapon_type == weapon"  # Only required for weapon attacks
+        - validate_ability_choice:
+            melee_no_finesse: "str"
+            melee_finesse: "dex"
+            ranged: "dex"
 
   legendary_actions:
     constraints:
