@@ -32,7 +32,7 @@ if __name__ == "__main__":
     parser.add_argument('--report', help='Generate detailed conversion report', action='store_true')
     
     args = parser.parse_args()
-    print(f"Converting {args.input} to {args.output} using rules from {args.rules}")
+    print(f"Converting {args.input} to {args.output}")
     
     # Initialize converter
     converter = DocxStatBlockConverter(args.collection, args.tags)
