@@ -9,7 +9,8 @@ from docx.text.paragraph import Paragraph
 from rich.console import Console
 from rich.table import Table
 from statblock_validator import StatBlockValidator
-from validators.action_validators import WeaponType  # Add this import
+from validators.action_validators import WeaponType
+from validators.dnd_constants import CR_TO_XP  # Add this import
 
 class DocxStatBlockConverter:
     def __init__(self, collection: str = None, tags: List[str] = None):
@@ -237,7 +238,8 @@ class DocxStatBlockConverter:
                 cr_match = re.match(r"Challenge (\d+(?:/\d+)?)\s*\(([,\d]+)\s*XP\)", text)
                 if cr_match:
                     rating = cr_match.group(1)
-                    xp = int(cr_match.group(2).replace(',', ''))
+                    # Lookup XP value based on CR rating rather than using the text value
+                    xp = self._get_xp_for_cr(rating)
                     self.current_creature["challenge_rating"] = {
                         "rating": rating,
                         "xp": xp
@@ -256,6 +258,10 @@ class DocxStatBlockConverter:
                         speeds[speed_type.lower()] = int(speed_match.group(2))
                 
                 self.current_creature["speed"] = speeds
+
+    def _get_xp_for_cr(self, cr: str) -> int:
+        """Get XP value for a given Challenge Rating."""
+        return CR_TO_XP.get(str(cr), 0)
 
     def _process_abilities(self, paragraphs: List[Paragraph]) -> None:
         """Process abilities section - let Pydantic handle validation."""
@@ -284,7 +290,7 @@ class DocxStatBlockConverter:
                     if save_match:
                         saving_throws.append({
                             "ability": save_match.group(1).lower(),
-                            "bonus": int(save_match.group(2))
+                            "modifier": int(save_match.group(2))  # Changed from bonus to modifier
                         })
             
             # Parse skills
@@ -295,7 +301,7 @@ class DocxStatBlockConverter:
                     if skill_match:
                         skills.append({
                             "name": skill_match.group(1),
-                            "bonus": int(skill_match.group(2))
+                            "modifier": int(skill_match.group(2))  # Changed from bonus to modifier
                         })
         
         self.current_creature.update({
@@ -574,22 +580,19 @@ class DocxStatBlockConverter:
         if not paragraphs:
             return
         
-        regional_effects = {
-            "description": paragraphs[0].text,
-            "effects": []
-        }
+        description = self._normalize_text(paragraphs[0].text)
+        effects = []
         
         current_effect = None
         for para in paragraphs[1:]:
-            # Check if paragraph starts with bold text
-            if para.runs and self._is_run_bold(para.runs[0]):  # Updated check
+            if para.runs and self._is_run_bold(para.runs[0]):
                 if current_effect:
-                    regional_effects["effects"].append(current_effect)
+                    effects.append(current_effect)
                 
                 name, description = self._extract_name_from_bold_runs(para)
                 
                 current_effect = {
-                    "name": name.strip,
+                    "name": name,
                     "description": description,
                     "mechanics": None
                 }
@@ -597,6 +600,7 @@ class DocxStatBlockConverter:
                 current_effect["description"] += f"\n{self._normalize_text(para.text)}"
         
         if current_effect:
-            regional_effects["effects"].append(current_effect)
+            effects.append(current_effect)
         
-        self.current_creature["regional_effects"] = regional_effects
+        # Set regional effects as a list of effects
+        self.current_creature["regional_effects"] = effects
