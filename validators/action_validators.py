@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ValidationInfo
 from typing import List, Optional, Union
 from enum import Enum
 
@@ -19,22 +19,22 @@ class Attack(BaseModel):
 
     @field_validator('reach')
     @classmethod
-    def validate_reach(cls, v: Optional[str], values: dict) -> Optional[str]:
-        if v and not values.get('is_melee', False):
+    def validate_reach(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
+        if v and not info.data.get('is_melee', False):
             raise ValueError('Reach can only be specified for melee attacks')
         return v
 
     @field_validator('range')
     @classmethod
-    def validate_range(cls, v: Optional[str], values: dict) -> Optional[str]:
-        if v and not values.get('is_ranged', False):
+    def validate_range(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
+        if v and not info.data.get('is_ranged', False):
             raise ValueError('Range can only be specified for ranged attacks')
         return v
 
     @field_validator('is_melee', 'is_ranged')
     @classmethod
-    def validate_attack_types(cls, v: bool, values: dict) -> bool:
-        if not v and not values.get('is_melee', False) and not values.get('is_ranged', False):
+    def validate_attack_types(cls, v: bool, info: ValidationInfo) -> bool:
+        if not v and not info.data.get('is_melee', False) and not info.data.get('is_ranged', False):
             raise ValueError('Attack must be either melee, ranged, or both')
         return v
 

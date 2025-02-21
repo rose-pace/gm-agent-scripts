@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, ValidationInfo
 from typing import List, Optional, Dict
 from datetime import date
 import re
@@ -97,30 +97,32 @@ class StatBlockValidator(BaseModel):
 
     @field_validator('armor_class')
     @classmethod
-    def validate_armor_class(cls, v: int) -> int:
-        if not (0 <= v <= 30):
+    def validate_armor_class(cls, v: ArmorClass) -> int:
+        if not (0 <= v.value <= 30):
             raise ValueError('Armor class must be between 0 and 30')
         return v
 
     @field_validator('hit_points')
     @classmethod
-    def validate_hit_points(cls, v: int) -> int:
-        if v < 1:
+    def validate_hit_points(cls, v: HitPoints) -> int:
+        if v.average < 1:
             raise ValueError('Hit points must be at least 1')
         return v
 
     @field_validator('speed')
     @classmethod
-    def validate_speed(cls, v: dict) -> dict:
-        for key, value in v.items():
+    def validate_speed(cls, v: Speed) -> dict:
+        for key, value in v.model_dump().items():
+            if value is None:
+                continue
             if key in ['walk', 'fly', 'swim', 'burrow', 'climb'] and (value % 5 != 0 or not (0 <= value <= 120)):
                 raise ValueError(f'{key} speed must be a multiple of 5 and between 0 and 120')
         return v
 
     @field_validator('proficiency_bonus', mode='before')
     @classmethod
-    def validate_proficiency_bonus(cls, v: Optional[int], values: Dict) -> int:
-        cr = values.get('challenge_rating')
+    def validate_proficiency_bonus(cls, v: Optional[int], info: ValidationInfo) -> int:
+        cr = info.data.get('challenge_rating')
         if cr is None:
             raise ValueError('Challenge rating is required to validate proficiency bonus')
             
@@ -140,8 +142,10 @@ class StatBlockValidator(BaseModel):
 
     @field_validator('senses')
     @classmethod
-    def validate_senses(cls, v: dict) -> dict:
-        for key, value in v.items():
+    def validate_senses(cls, v: Senses) -> dict:
+        for key, value in v.model_dump().items():
+            if value is None:
+                continue
             if key in ['darkvision', 'blindsight', 'tremorsense', 'truesight'] and (value % 5 != 0 or not (0 <= value <= 120)):
                 raise ValueError(f'{key} must be a multiple of 5 and between 0 and 120')
             if key == 'passive_perception' and not (0 <= value <= 30):
