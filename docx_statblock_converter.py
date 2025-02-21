@@ -303,6 +303,19 @@ class DocxStatBlockConverter:
             "skills": skills if skills else None
         })
 
+    def _is_run_bold(self, run) -> bool:
+        """
+        Check if a run is bold using multiple methods.
+        - Checks direct bold property
+        - Checks for 'Strong' style
+        - Checks font.bold property
+        """
+        return (
+            run.bold or  # Direct bold property
+            (hasattr(run, 'style') and run.style and 'Strong' in run.style.name) or  # Style name
+            (hasattr(run, 'font') and run.font and run.font.bold)  # Font property
+        )
+
     def _extract_name_from_bold_runs(self, paragraph: Paragraph) -> tuple[str, str]:
         """
         Extract name from contiguous bold runs at start of paragraph.
@@ -310,7 +323,7 @@ class DocxStatBlockConverter:
         """
         name = ''
         for run in paragraph.runs:
-            if run.bold:
+            if self._is_run_bold(run):
                 name += run.text
             else:
                 break
@@ -323,7 +336,7 @@ class DocxStatBlockConverter:
         current_action = None
         
         for para in paragraphs:
-            if para.runs and para.runs[0].bold:
+            if para.runs and self._is_run_bold(para.runs[0]):  # Updated check
                 if current_action:
                     actions.append(current_action)
                 
@@ -353,8 +366,8 @@ class DocxStatBlockConverter:
                     # Base attack info
                     attack_info = {
                         "weapon_type": weapon_or_spell,
-                        "is_melee": 'Melee' in description,
-                        "is_ranged": 'Ranged' in description or 'range' in description.lower(),
+                        "is_melee": 'melee' in description.lower(),
+                        "is_ranged": 'range' in description.lower(),
                         "bonus": int(attack_match.group(1)),
                         "ability_used": None,
                         "magical_bonus": None,
@@ -421,7 +434,7 @@ class DocxStatBlockConverter:
         }
         
         for para in paragraphs[1:]:  # Skip the first paragraph (description)
-            if para.runs and para.runs[0].bold:
+            if para.runs and self._is_run_bold(para.runs[0]):  # Updated check
                 name, description = self._extract_name_from_bold_runs(para)
                 
                 # Parse cost if specified
@@ -457,7 +470,7 @@ class DocxStatBlockConverter:
         
         current_action = None
         for para in paragraphs[1:]:
-            if para.runs and para.runs[0].bold:
+            if para.runs and self._is_run_bold(para.runs[0]):  # Updated check
                 if current_action:
                     lair_actions["actions"].append(current_action)
                 
@@ -532,7 +545,7 @@ class DocxStatBlockConverter:
         current_trait = None
         
         for para in paragraphs:
-            if para.runs and para.runs[0].bold:
+            if para.runs and self._is_run_bold(para.runs[0]):  # Updated check
                 if current_trait:
                     traits.append(current_trait)
                 
@@ -563,7 +576,7 @@ class DocxStatBlockConverter:
         current_effect = None
         for para in paragraphs[1:]:
             # Check if paragraph starts with bold text
-            if para.runs and para.runs[0].bold:
+            if para.runs and self._is_run_bold(para.runs[0]):  # Updated check
                 if current_effect:
                     regional_effects["effects"].append(current_effect)
                 
