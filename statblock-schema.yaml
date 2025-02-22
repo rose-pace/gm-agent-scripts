@@ -154,12 +154,40 @@ actions:
   bonus_actions:
     - name: string
       description: string
-      usage: string | null
+      attack:
+        weapon_type: string  # [weapon, spell]
+        is_melee: boolean
+        is_ranged: boolean
+        bonus: integer
+        ability_used: string | null
+        magical_bonus: integer | null  # Only for weapon attacks
+        is_finesse: boolean | null  # Only for melee weapon attacks
+        reach: string | null  # Only when is_melee is true
+        range: string | null  # Only when is_ranged is true
+      hit:
+        damage: string | null  # Damage dice/formula
+        damage_type: string | null
+        additional_effects: string | null
+      usage: string | null  # Usage limitations
   
   reactions:
     - name: string
       description: string
-      usage: string | null
+      attack:
+        weapon_type: string  # [weapon, spell]
+        is_melee: boolean
+        is_ranged: boolean
+        bonus: integer
+        ability_used: string | null
+        magical_bonus: integer | null  # Only for weapon attacks
+        is_finesse: boolean | null  # Only for melee weapon attacks
+        reach: string | null  # Only when is_melee is true
+        range: string | null  # Only when is_ranged is true
+      hit:
+        damage: string | null  # Damage dice/formula
+        damage_type: string | null
+        additional_effects: string | null
+      usage: string | null  # Usage limitations
 
 # Legendary actions (if applicable)
 legendary_actions:
