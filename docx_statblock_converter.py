@@ -354,7 +354,7 @@ class DocxStatBlockConverter:
                 if current_action:
                     # Check if current action is spellcasting
                     if 'spellcasting' in current_action['name'].lower():
-                        spellcasting = spellcasting_parser.parse_spellcasting_trait(f'{current_action['name']} {current_action['description']}')
+                        spellcasting = spellcasting_parser.parse_spellcasting_trait(f'{current_action['name']} {current_action['description']}', self.current_creature['abilities'])
                         if spellcasting:
                             self.current_creature['spellcasting'] = spellcasting
                     else:
@@ -436,7 +436,7 @@ class DocxStatBlockConverter:
         if current_action:
             # Check if current action is spellcasting
             if 'spellcasting' in current_action['name'].lower():
-                spellcasting = spellcasting_parser.parse_spellcasting_trait(f'{current_action['name']} {current_action['description']}')
+                spellcasting = spellcasting_parser.parse_spellcasting_trait(f'{current_action['name']} {current_action['description']}', self.current_creature['abilities'])
                 if spellcasting:
                     self.current_creature['spellcasting'] = spellcasting
             else:
@@ -576,7 +576,7 @@ class DocxStatBlockConverter:
                 if current_trait:
                     # Check if current trait is spellcasting
                     if 'spellcasting' in current_trait['name'].lower():
-                        spellcasting = spellcasting_parser.parse_spellcasting_trait(f'{current_trait['name']} {current_trait['description']}')
+                        spellcasting = spellcasting_parser.parse_spellcasting_trait(f'{current_trait['name']} {current_trait['description']}', self.current_creature['abilities'])
                         if spellcasting:
                             self.current_creature['spellcasting'] = spellcasting
                     else:
@@ -593,7 +593,7 @@ class DocxStatBlockConverter:
         # Handle last trait
         if current_trait:
             if 'spellcasting' in current_trait['name'].lower():
-                spellcasting = spellcasting_parser.parse_spellcasting_trait(f'{current_trait['name']} {current_trait['description']}')
+                spellcasting = spellcasting_parser.parse_spellcasting_trait(f'{current_trait['name']} {current_trait['description']}', self.current_creature['abilities'])
                 if spellcasting:
                     self.current_creature['spellcasting'] = spellcasting
             else:

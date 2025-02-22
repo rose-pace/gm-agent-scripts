@@ -13,7 +13,7 @@ class SpellcastingParser:
         r'charisma': SpellcastingAbility.CHARISMA
     }
 
-    def parse_spellcasting_trait(self, text: str) -> Optional[Dict]:
+    def parse_spellcasting_trait(self, text: str, abilities: dict) -> Optional[Dict]:
         """Parse spellcasting trait text into structured data."""
         if not any(x in text.lower() for x in ['spellcasting', 'innate spellcasting']):
             return None
@@ -30,6 +30,8 @@ class SpellcastingParser:
 
         # Parse DC and attack bonus
         dc, attack_bonus, base_modifier = self._parse_modifiers(text)
+        if not base_modifier:
+            base_modifier = abilities[spellcasting_data['ability']].modifier
         spellcasting_data.update({
             'dc': dc,
             'attack_bonus': attack_bonus,
