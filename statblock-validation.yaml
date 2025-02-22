@@ -353,34 +353,33 @@ validation_rules:
                 - slashing
                 - thunder
       usage:
-        - type: string
-        - optional: true
-        - pattern: "^(?:\\d+/(?:day|short rest|long rest)|recharge \\d+-\\d+|recharge)$"
-    type:
-      - enum:
-          - recharge
-          - per_day
-          - per_short_rest
-          - per_long_rest
-          - costs
-    value:
-      - type: integer
-      - min: 1
-      - max: 20
-      - applies_to: "type in ['recharge', 'costs']"
-    times:
-      - type: integer
-      - min: 1
-      - max: 10
-      - applies_to: "type in ['per_day', 'per_short_rest', 'per_long_rest']"
-    range:
-      - type: array
-      - items: integer
-      - min_items: 1
-      - max_items: 6
-      - item_range: [1, 6]
-      - applies_to: "type == 'recharge'"
-      - validate: "sorted and consecutive"
+        optional: true
+        when_present:
+          type:
+            - enum:
+                - recharge
+                - per_day
+                - per_short_rest
+                - per_long_rest
+                - costs
+          value:
+            - type: integer
+            - min: 1
+            - max: 20
+            - applies_to: "type in ['recharge', 'costs']"
+          times:
+            - type: integer
+            - min: 1
+            - max: 10
+            - applies_to: "type in ['per_day', 'per_short_rest', 'per_long_rest']"
+          range:
+            - type: array
+            - items: integer
+            - min_items: 2
+            - max_items: 6
+            - item_range: [1, 6]
+            - applies_to: "type == 'recharge'"
+            - validate: "sorted and consecutive"
 
   legendary_actions:
     constraints:
@@ -392,6 +391,34 @@ validation_rules:
         - type: integer
         - min: 1
         - max: 3
+      usage:  # Add usage constraints to legendary actions
+        optional: true
+        when_present:
+          type:
+            - enum:
+                - recharge
+                - per_day
+                - per_short_rest
+                - per_long_rest
+                - costs
+          value:
+            - type: integer
+            - min: 1
+            - max: 20
+            - applies_to: "type in ['recharge', 'costs']"
+          times:
+            - type: integer
+            - min: 1
+            - max: 10
+            - applies_to: "type in ['per_day', 'per_short_rest', 'per_long_rest']"
+          range:
+            - type: array
+            - items: integer
+            - min_items: 2
+            - max_items: 6
+            - item_range: [1, 6]
+            - applies_to: "type == 'recharge'"
+            - validate: "sorted and consecutive"
 
   lair_actions:
     constraints:
@@ -399,6 +426,34 @@ validation_rules:
         - type: integer
         - min: 0
         - max: 20
+      usage:  # Add usage constraints to lair actions
+        optional: true
+        when_present:
+          type:
+            - enum:
+                - recharge
+                - per_day
+                - per_short_rest
+                - per_long_rest
+                - costs
+          value:
+            - type: integer
+            - min: 1
+            - max: 20
+            - applies_to: "type in ['recharge', 'costs']"
+          times:
+            - type: integer
+            - min: 1
+            - max: 10
+            - applies_to: "type in ['per_day', 'per_short_rest', 'per_long_rest']"
+          range:
+            - type: array
+            - items: integer
+            - min_items: 2
+            - max_items: 6
+            - item_range: [1, 6]
+            - applies_to: "type == 'recharge'"
+            - validate: "sorted and consecutive"
 
   regional_effects:
     constraints:
