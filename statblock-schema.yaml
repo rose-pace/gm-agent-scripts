@@ -33,7 +33,7 @@ core_stats:
   hit_points:
     average: integer
     roll: string  # e.g., "27d12 + 150"
-  speed:
+  speed: # Movement speeds in feet per round
     walk: integer | null
     fly: integer | null
     swim: integer | null
