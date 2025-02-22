@@ -466,20 +466,29 @@ class DocxStatBlockConverter:
                     
                     # Handle weapon-specific attributes
                     if weapon_or_spell == WeaponType.WEAPON:
-                        # Check for ability used by matching bonus to ability modifier + proficiency
+                        # Check for ability used by matching bonus to ability modifier + proficiency + possible magical bonus
                         bonus = attack_info["bonus"]
-                        str = self.current_creature['abilities']['str']['modifier']
-                        dex = self.current_creature['abilities']['dex']['modifier']
+                        str_mod = self.current_creature['abilities']['str']['modifier']
+                        dex_mod = self.current_creature['abilities']['dex']['modifier']
                         proficiency = self.current_creature['proficiency_bonus'] or 2  # Default to 2
                         
-                        if bonus == dex + proficiency:
-                            attack_info["ability_used"] = "dex"
-                        else:
-                            attack_info["ability_used"] = "str"
+                        # Test combinations with possible magical bonuses (+1 to +3)
+                        for magical_bonus in range(1, 4):
+                            if bonus == dex_mod + proficiency + magical_bonus:
+                                attack_info["ability_used"] = "dex"
+                                attack_info["magical_bonus"] = magical_bonus
+                                break
+                            elif bonus == str_mod + proficiency + magical_bonus:
+                                attack_info["ability_used"] = "str"
+                                attack_info["magical_bonus"] = magical_bonus
+                                break
                         
-                        # Check for two-handed weapon bonus
-                        #two_handed_match = re.search(r'(\d+)d\d+\s*([\w\s,]+)\s*damage if used (?:two-handed )?', description)
-
+                        # If no magical bonus found, test without it
+                        if attack_info["ability_used"] is None:
+                            if bonus == dex_mod + proficiency:
+                                attack_info["ability_used"] = "dex"
+                            else:
+                                attack_info["ability_used"] = "str"
                     
                     current_action["attack"] = attack_info
                     
