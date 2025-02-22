@@ -317,10 +317,6 @@ validation_rules:
                 - str
                 - dex
             - applies_to: "weapon_type == weapon"
-            - validate_ability_choice:
-                melee_no_finesse: "str"
-                melee_finesse: "dex"
-                ranged: "dex"
           magical_bonus:
             - type: integer
             - min: 0
@@ -337,6 +333,9 @@ validation_rules:
         when_present:
           damage:
             - pattern: "^(?:\\d+d\\d+|\\d+)(?:\\s*[+-]\\s*\\d+)?$"
+          damage_two_handed:
+            - pattern: "^(?:\\d+d\\d+|\\d+)(?:\\s*[+-]\\s*\\d+)?$"
+            - optional: true
           damage_type:
             - enum:  # Reference the damage_types from defenses section
                 - acid

@@ -1,3 +1,4 @@
+import re
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator, ValidationInfo
 from enum import Enum
@@ -56,7 +57,6 @@ class Attack(BaseModel):
     bonus: int
     ability_used: Optional[str]
     magical_bonus: Optional[int]
-    is_finesse: Optional[bool]
     reach: Optional[str]  # Only used if is_melee is True
     range: Optional[str]  # Only used if is_ranged is True
 
@@ -90,8 +90,18 @@ class Attack(BaseModel):
 
 class DamageRoll(BaseModel):
     damage: str  # Damage dice/formula
+    damage_two_handed: Optional[str] = None  # Two-handed damage formula for versatile weapons
     damage_type: str
     additional_effects: Optional[str]
+
+    @field_validator('damage_two_handed')
+    @classmethod
+    def validate_two_handed_damage(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            # Check for valid dice formula pattern
+            if not re.match(r'^\d+d\d+(?:\s*[+-]\s*\d+)?$', v):
+                raise ValueError('Invalid two-handed damage formula')
+        return v
 
 class Action(BaseModel):
     name: str

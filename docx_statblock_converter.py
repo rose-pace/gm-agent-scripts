@@ -449,7 +449,6 @@ class DocxStatBlockConverter:
                         "bonus": int(attack_match.group(1)),
                         "ability_used": None,
                         "magical_bonus": None,
-                        "is_finesse": False,
                         "reach": None,
                         "range": None
                     }
@@ -467,25 +466,47 @@ class DocxStatBlockConverter:
                     
                     # Handle weapon-specific attributes
                     if weapon_or_spell == WeaponType.WEAPON:
-                        # Check for finesse property
-                        if 'finesse' in description.lower():
-                            attack_info["is_finesse"] = True
-                            attack_info["ability_used"] = 'dex'
+                        # Check for ability used by matching bonus to ability modifier + proficiency
+                        bonus = attack_info["bonus"]
+                        str = self.current_creature['abilities']['str']['modifier']
+                        dex = self.current_creature['abilities']['dex']['modifier']
+                        proficiency = self.current_creature['proficiency_bonus'] or 2  # Default to 2
+                        
+                        if bonus == dex + proficiency:
+                            attack_info["ability_used"] = "dex"
                         else:
-                            attack_info["ability_used"] = 'dex' if attack_info["is_ranged"] else 'str'
+                            attack_info["ability_used"] = "str"
+                        
+                        # Check for two-handed weapon bonus
+                        #two_handed_match = re.search(r'(\d+)d\d+\s*([\w\s,]+)\s*damage if used (?:two-handed )?', description)
+
                     
                     current_action["attack"] = attack_info
                     
                     # Parse damage
-                    damage_match = re.search(r'Hit:\s*\d+\s*\(([\dd+\s-]+)\)\s*([\w\s,]+)\s*damage', description)
+                    damage_pattern = r'Hit:\s*\d+\s*\(([\dd+\s-]+)\)\s*([\w\s,]+)\s*damage'
+                    two_handed_pattern = r'or\s*\d+\s*\(([\dd+\s-]+)\)\s*\2\s*damage when used with two hands'
+                    
+                    damage_match = re.search(damage_pattern, description)
+                    two_handed_match = re.search(two_handed_pattern, description)
+                    
                     if damage_match:
-                        # Check for additional effects after damage
-                        additional_match = re.search(r'damage(?:,|\.) (.+?)(?:$|\.(?:\s|$))', description)
-                        current_action["hit"] = {
+                        hit_info = {
                             "damage": damage_match.group(1).strip(),
                             "damage_type": damage_match.group(2).strip(),
-                            "additional_effects": additional_match.group(1).strip() if additional_match else None
                         }
+                        
+                        # Add two-handed damage if present
+                        if two_handed_match:
+                            hit_info["damage_two_handed"] = two_handed_match.group(1).strip()
+                            
+                        # Check for additional effects after all damage
+                        effects_pattern = r'damage(?:(?:,|\.) (.+?)(?:$|\.(?:\s|$)))'
+                        additional_match = re.search(effects_pattern, description)
+                        if additional_match:
+                            hit_info["additional_effects"] = additional_match.group(1).strip()
+                            
+                        current_action["hit"] = hit_info
             
             elif current_action:
                 current_action["description"] += f"\n{self._normalize_text(para.text)}"
