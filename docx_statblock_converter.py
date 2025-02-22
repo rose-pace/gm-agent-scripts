@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import unicodedata
 import re
 from datetime import datetime
@@ -194,6 +194,63 @@ class DocxStatBlockConverter:
     MELEE_ATTACK_PATTERN = r'^Melee (?:Weapon|Spell) Attack:\s*(?P<bonus>[+-]\d+) to hit, reach (?P<distance>\d+ ft\.)'
     RANGED_ATTACK_PATTERN = r'^Ranged (?:Weapon|Spell) Attack:\s*(?P<bonus>[+-]\d+) to hit, range (?P<distance>\d+/\d+ ft\.)'
 
+    USAGE_PATTERNS = {
+        'recharge': r'recharge (\d+)(?:-(\d+))?',
+        'per_day': r'(\d+)/day',
+        'per_short_rest': r'(\d+)/short rest',
+        'per_long_rest': r'(\d+)/long rest',
+        'costs': r'costs? (\d+)',
+    }
+
+    def _parse_usage(self, description: str) -> Optional[Dict]:
+        """Parse usage restrictions from description."""
+        description_lower = description.lower()
+        
+        # Check for recharge
+        recharge_match = re.search(self.USAGE_PATTERNS['recharge'], description_lower)
+        if recharge_match:
+            start = int(recharge_match.group(1))
+            end = int(recharge_match.group(2)) if recharge_match.group(2) else start
+            return {
+                'type': 'recharge',
+                'value': start if start == end else None,
+                'range': list(range(start, end + 1)) if start != end else None
+            }
+        
+        # Check for per day
+        per_day_match = re.search(self.USAGE_PATTERNS['per_day'], description_lower)
+        if per_day_match:
+            return {
+                'type': 'per_day',
+                'times': int(per_day_match.group(1))
+            }
+            
+        # Check for per short rest
+        short_rest_match = re.search(self.USAGE_PATTERNS['per_short_rest'], description_lower)
+        if short_rest_match:
+            return {
+                'type': 'per_short_rest',
+                'times': int(short_rest_match.group(1))
+            }
+            
+        # Check for per long rest
+        long_rest_match = re.search(self.USAGE_PATTERNS['per_long_rest'], description_lower)
+        if long_rest_match:
+            return {
+                'type': 'per_long_rest',
+                'times': int(long_rest_match.group(1))
+            }
+            
+        # Check for resource cost
+        cost_match = re.search(self.USAGE_PATTERNS['costs'], description_lower)
+        if cost_match:
+            return {
+                'type': 'costs',
+                'value': int(cost_match.group(1))
+            }
+        
+        return None
+
     def _process_subheader(self, subheader: str) -> None:
         """Process header section containing size, type, alignment."""
         if not subheader:
@@ -368,7 +425,7 @@ class DocxStatBlockConverter:
                     "description": description,
                     "attack": None,
                     "hit": None,
-                    "usage": None
+                    "usage": self._parse_usage(description)  # Add usage parsing here
                 }
                 
                 # Parse attack if present
@@ -473,7 +530,7 @@ class DocxStatBlockConverter:
                     "name": name.strip(),
                     "description": description,
                     "cost": cost,
-                    "usage": None  # Required field
+                    "usage": self._parse_usage(description)
                 })
         
         self.current_creature["legendary_actions"] = legendary_actions
@@ -505,7 +562,7 @@ class DocxStatBlockConverter:
                 current_action = {
                     "name": name,
                     "description": description,
-                    "usage": None  # Required field
+                    "usage": self._parse_usage(description)
                 }
             elif current_action:
                 current_action["description"] += f"\n{self._normalize_text(para.text)}"

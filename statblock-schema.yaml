@@ -149,7 +149,11 @@ actions:
         damage: string | null  # Damage dice/formula
         damage_type: string | null
         additional_effects: string | null
-      usage: string | null  # Usage limitations
+      usage:
+        type: string  # recharge, per_day, per_short_rest, per_long_rest, costs
+        value: integer | null  # For costs and single recharge values
+        times: integer | null  # For uses per time period
+        range: array[integer] | null  # For recharge ranges like [5,6]
   
   bonus_actions:
     - name: string
@@ -168,7 +172,11 @@ actions:
         damage: string | null  # Damage dice/formula
         damage_type: string | null
         additional_effects: string | null
-      usage: string | null  # Usage limitations
+      usage:
+        type: string  # recharge, per_day, per_short_rest, per_long_rest, costs
+        value: integer | null  # For costs and single recharge values
+        times: integer | null  # For uses per time period
+        range: array[integer] | null  # For recharge ranges like [5,6]
   
   reactions:
     - name: string
@@ -187,7 +195,11 @@ actions:
         damage: string | null  # Damage dice/formula
         damage_type: string | null
         additional_effects: string | null
-      usage: string | null  # Usage limitations
+      usage:
+        type: string  # recharge, per_day, per_short_rest, per_long_rest, costs
+        value: integer | null  # For costs and single recharge values
+        times: integer | null  # For uses per time period
+        range: array[integer] | null  # For recharge ranges like [5,6]
 
 # Legendary actions (if applicable)
 legendary_actions:
@@ -197,7 +209,11 @@ legendary_actions:
     - name: string
       description: string
       cost: integer
-      usage: string | null
+      usage:
+        type: string  # recharge, per_day, per_short_rest, per_long_rest, costs
+        value: integer | null  # For costs and single recharge values
+        times: integer | null  # For uses per time period
+        range: array[integer] | null  # For recharge ranges like [5,6]
 
 # Lair actions (if applicable)
 lair_actions:
@@ -206,7 +222,11 @@ lair_actions:
   actions:
     - name: string
       description: string
-      usage: string | null
+      usage:
+        type: string  # recharge, per_day, per_short_rest, per_long_rest, costs
+        value: integer | null  # For costs and single recharge values
+        times: integer | null  # For uses per time period
+        range: array[integer] | null  # For recharge ranges like [5,6]
 
 # Regional effects (if applicable)
 regional_effects:

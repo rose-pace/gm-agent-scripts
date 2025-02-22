@@ -1,10 +1,53 @@
-from pydantic import BaseModel, field_validator, ValidationInfo
 from typing import List, Optional
+from pydantic import BaseModel, Field, field_validator, ValidationInfo
 from enum import Enum
 
 class WeaponType(str, Enum):
     WEAPON = "weapon"
     SPELL = "spell"
+
+class UsageType(str, Enum):
+    RECHARGE = "recharge"
+    PER_DAY = "per_day"
+    PER_SHORT_REST = "per_short_rest"
+    PER_LONG_REST = "per_long_rest"
+    COSTS = "costs"
+
+class Usage(BaseModel):
+    type: UsageType
+    value: Optional[int] = None
+    times: Optional[int] = None
+    range: Optional[List[int]] = None
+
+    @field_validator('range')
+    @classmethod
+    def validate_range(cls, v: Optional[List[int]]) -> Optional[List[int]]:
+        if v is not None:
+            # Ensure values are 1-6
+            if not all(1 <= x <= 6 for x in v):
+                raise ValueError('Recharge range values must be between 1 and 6')
+            # Ensure sorted and consecutive
+            if sorted(v) != list(range(min(v), max(v) + 1)):
+                raise ValueError('Recharge range must be consecutive numbers')
+        return v
+
+    @field_validator('value')
+    @classmethod
+    def validate_value(cls, v: Optional[int], info: ValidationInfo) -> Optional[int]:
+        if v is not None:
+            usage_type = info.data.get('type')
+            if usage_type == UsageType.COSTS and not (1 <= v <= 20):
+                raise ValueError('Cost value must be between 1 and 20')
+            elif usage_type == UsageType.RECHARGE and not (1 <= v <= 6):
+                raise ValueError('Recharge value must be between 1 and 6')
+        return v
+
+    @field_validator('times')
+    @classmethod
+    def validate_times(cls, v: Optional[int], info: ValidationInfo) -> Optional[int]:
+        if v is not None and not (1 <= v <= 10):
+            raise ValueError('Times value must be between 1 and 10')
+        return v
 
 class Attack(BaseModel):
     weapon_type: WeaponType
@@ -55,13 +98,13 @@ class Action(BaseModel):
     description: str
     attack: Optional[Attack]
     hit: Optional[DamageRoll]
-    usage: Optional[str]
+    usage: Optional[Usage] = None
 
 class LegendaryAction(BaseModel):
     name: str
     description: str
     cost: int
-    usage: Optional[str]
+    usage: Optional[Usage] = None
 
     @field_validator('cost')
     @classmethod
@@ -73,7 +116,7 @@ class LegendaryAction(BaseModel):
 class LairAction(BaseModel):
     name: str
     description: str
-    usage: Optional[str]
+    usage: Optional[Usage] = None
 
 class RegionalEffect(BaseModel):
     name: str
