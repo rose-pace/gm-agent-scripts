@@ -118,10 +118,22 @@ class LairAction(BaseModel):
     description: str
     usage: Optional[Usage] = None
 
+class RegionalEffectMechanics(BaseModel):
+    save_dc: int = Field(ge=1, le=30)
+    save_type: str = Field(
+        regex="^(strength|dexterity|constitution|intelligence|wisdom|charisma)$"
+    )
+    effects: str = Field(min_length=1)
+
 class RegionalEffect(BaseModel):
-    name: str
-    description: str
-    mechanics: Optional[dict]
+    name: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    mechanics: Optional[RegionalEffectMechanics] = None
+
+class RegionalEffects(BaseModel):
+    range: str = Field(pattern=r"^\d+ (?:feet|miles)$")
+    duration: str = Field(min_length=1)
+    effects: List[RegionalEffect] = Field(min_items=1)
 
 class ActionSet(BaseModel):
     standard: List[Action]

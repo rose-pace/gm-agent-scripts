@@ -659,31 +659,61 @@ class DocxStatBlockConverter:
         self.current_creature['traits'] = traits if traits else None
 
     def _process_regional_effects(self, paragraphs: List[Paragraph]) -> None:
-        """Process regional effects section."""
+        """Process regional effects section with mechanics parsing."""
         if not paragraphs:
             return
         
-        description = self._normalize_text(paragraphs[0].text)
-        effects = []
+        # Extract range and duration from first paragraph
+        first_para = self._normalize_text(paragraphs[0].text)
+        range_match = re.search(r"within (\d+ (?:feet|miles))", first_para)
+        duration_match = re.search(r"(?:remain|persist|last).*?(?:for|until) (.*?)(?:\.|$)", first_para)
+        
+        regional_effects = {
+            "range": range_match.group(1) if range_match else None,
+            "duration": duration_match.group(1).strip() if duration_match else None,
+            "effects": []
+        }
         
         current_effect = None
         for para in paragraphs[1:]:
             if para.runs and self._is_run_bold(para.runs[0]):
                 if current_effect:
-                    effects.append(current_effect)
+                    regional_effects["effects"].append(current_effect)
                 
                 name, description = self._extract_name_from_bold_runs(para)
                 
+                # Initialize new effect with mechanics parsing
                 current_effect = {
                     "name": name,
                     "description": description,
-                    "mechanics": None
+                    "mechanics": self._parse_effect_mechanics(description)
                 }
             elif current_effect:
                 current_effect["description"] += f"\n{self._normalize_text(para.text)}"
+                # Check for mechanics in continued description
+                mechanics = self._parse_effect_mechanics(para.text)
+                if mechanics:
+                    current_effect["mechanics"] = mechanics
         
+        # Add last effect
         if current_effect:
-            effects.append(current_effect)
+            regional_effects["effects"].append(current_effect)
         
-        # Set regional effects as a list of effects
-        self.current_creature["regional_effects"] = effects
+        self.current_creature["regional_effects"] = regional_effects
+
+    def _parse_effect_mechanics(self, text: str) -> Optional[dict]:
+        """Parse saving throws and effects from regional effect description."""
+        mechanics = {}
+        
+        # Look for save DC pattern
+        dc_match = re.search(r"DC (\d+) (\w+) saving throw", text)
+        if dc_match:
+            mechanics["save_dc"] = int(dc_match.group(1))
+            mechanics["save_type"] = dc_match.group(2).lower()
+            
+            # Look for effects after the saving throw
+            effects_match = re.search(r"saving throw(?:,|\.) (.+?)(?:$|\.(?:\s|$))", text)
+            if effects_match:
+                mechanics["effects"] = effects_match.group(1).strip()
+        
+        return mechanics if mechanics else None

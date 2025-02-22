@@ -2,7 +2,7 @@ from pydantic import BaseModel, field_validator, ValidationInfo
 from typing import List, Optional, Dict
 from datetime import date
 import re
-from validators.action_validators import ActionSet, LegendaryActionSet, LairActionSet, RegionalEffect
+from validators.action_validators import ActionSet, LegendaryActionSet, LairActionSet, RegionalEffect, RegionalEffects
 from validators.spellcasting_validators import SpellcastingTrait
 from validators.ability_validators import calculate_proficiency_bonus
 from validators.challenge_rating_validators import ChallengeRating
@@ -82,7 +82,7 @@ class StatBlockValidator(BaseModel):
     actions: ActionSet
     legendary_actions: Optional[LegendaryActionSet] = None
     lair_actions: Optional[LairActionSet] = None
-    regional_effects: Optional[List[RegionalEffect]] = None
+    regional_effects: Optional[RegionalEffects] = None
     description: Optional[Dict[str, Optional[str]]] = None
     additional_info: Optional[Dict[str, Optional[List[str]]]] = None
     challenge_rating: ChallengeRating
@@ -150,6 +150,28 @@ class StatBlockValidator(BaseModel):
                 raise ValueError(f'{key} must be a multiple of 5 and between 0 and 120')
             if key == 'passive_perception' and not (0 <= value <= 30):
                 raise ValueError('Passive perception must be between 0 and 30')
+        return v
+
+    @field_validator('regional_effects')
+    @classmethod
+    def validate_regional_effects(cls, v: Optional[RegionalEffects], info: ValidationInfo) -> Optional[RegionalEffects]:
+        if v is not None:
+            # Validate save DC against proficiency and ability scores
+            if any(effect.mechanics for effect in v.effects):
+                abilities = info.data.get('abilities', {})
+                proficiency = info.data.get('proficiency_bonus')
+                
+                if not abilities or proficiency is None:
+                    raise ValueError('Abilities and proficiency bonus required to validate save DCs')
+                
+                for effect in v.effects:
+                    if effect.mechanics:
+                        save_dc = effect.mechanics.save_dc
+                        ability_mod = abilities.get(effect.mechanics.save_type, {}).get('modifier', 0)
+                        expected_dc = 8 + proficiency + ability_mod
+                        
+                        if save_dc != expected_dc:
+                            raise ValueError(f'Save DC {save_dc} does not match expected DC {expected_dc} for {effect.name}')
         return v
 
     class Config:
