@@ -86,7 +86,7 @@ class SpellcastingParser:
 
         # Limited use spells
         for freq in ['3/day', '2/day', '1/day', '1/rest', '1/dawn']:
-            freq_match = re.search(f'{freq}:\s*([^\.]+)', text)
+            freq_match = re.search(f'{freq}(?: [Ee]{1}ach)?:\s*([^\.]+)', text)
             if freq_match:
                 data['limited_use'].append({
                     'frequency': freq,
