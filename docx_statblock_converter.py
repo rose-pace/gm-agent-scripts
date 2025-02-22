@@ -11,6 +11,7 @@ from statblock_validator import StatBlockValidator
 from parsers.spellcasting_parser import SpellcastingParser
 from validators.action_validators import WeaponType
 from validators.dnd_constants import CR_TO_XP  # Add this import
+from parsers.damage_type_parser import DamageTypeParser
 
 class DocxStatBlockConverter:
     def __init__(self, collection: str = None, tags: List[str] = None):
@@ -580,11 +581,11 @@ class DocxStatBlockConverter:
             
             if text.startswith("Damage Resistances"):
                 resistances = text.replace("Damage Resistances", "").strip()
-                self.current_creature["damage_resistances"] = [r.strip() for r in resistances.split(", ")]
+                self.current_creature["damage_resistances"] = DamageTypeParser.parse_damage_types(resistances)
             
             elif text.startswith("Damage Immunities"):
                 immunities = text.replace("Damage Immunities", "").strip()
-                self.current_creature["damage_immunities"] = [i.strip() for i in immunities.split(", ")]
+                self.current_creature["damage_immunities"] = DamageTypeParser.parse_damage_types(immunities)
             
             elif text.startswith("Condition Immunities"):
                 conditions = text.replace("Condition Immunities", "").strip()

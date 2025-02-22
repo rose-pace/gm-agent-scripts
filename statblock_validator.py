@@ -6,6 +6,7 @@ from validators.action_validators import ActionSet, LegendaryActionSet, LairActi
 from validators.spellcasting_validators import SpellcastingTrait
 from validators.ability_validators import calculate_proficiency_bonus
 from validators.challenge_rating_validators import ChallengeRating
+from parsers.damage_type_parser import DamageTypeParser
 
 class Metadata(BaseModel):
     name: str
@@ -172,6 +173,28 @@ class StatBlockValidator(BaseModel):
                         
                         if save_dc != expected_dc:
                             raise ValueError(f'Save DC {save_dc} does not match expected DC {expected_dc} for {effect.name}')
+        return v
+
+    @field_validator('damage_resistances')
+    @classmethod
+    def validate_damage_resistances(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is None:
+            return v
+        
+        for resistance in v:
+            if not DamageTypeParser.validate_damage_type(resistance):
+                raise ValueError(f'Invalid damage resistance type: {resistance}')
+        return v
+
+    @field_validator('damage_immunities')
+    @classmethod
+    def validate_damage_immunities(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is None:
+            return v
+        
+        for immunity in v:
+            if not DamageTypeParser.validate_damage_type(immunity):
+                raise ValueError(f'Invalid damage immunity type: {immunity}')
         return v
 
     class Config:
