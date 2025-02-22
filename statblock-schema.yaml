@@ -230,8 +230,8 @@ lair_actions:
 
 # Regional effects (if applicable)
 regional_effects:
-  range: string  # Area of effect
-  duration: string  # How long effects last
+  range: string | null # Area of effect
+  duration: string | null  # How long effects last
   effects:
     - name: string
       description: string
@@ -242,6 +242,7 @@ regional_effects:
 
 # Descriptive text
 description:
+  unparsed_text: string | null
   appearance: string | null
   personality: string | null
   background: string | null

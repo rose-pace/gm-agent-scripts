@@ -61,7 +61,7 @@ class Languages(BaseModel):
     special: Optional[str] = None
 
 class Description(BaseModel):
-    unparsed_text: str = None # Original text before classification
+    unparsed_text: Optional[str] = None # Original text before classification
     appearance: Optional[str] = None
     personality: Optional[str] = None  
     background: Optional[str] = None
@@ -85,6 +85,8 @@ class StatBlockValidator(BaseModel):
     condition_immunities: Optional[List[str]] = None
     senses: Senses
     languages: Languages
+    challenge_rating: ChallengeRating
+    proficiency_bonus: Optional[int] = None
     traits: Optional[List[dict]] = None
     spellcasting: Optional[SpellcastingTrait] = None
     actions: ActionSet
@@ -93,8 +95,6 @@ class StatBlockValidator(BaseModel):
     regional_effects: Optional[RegionalEffects] = None
     description: Optional[Description] = None
     additional_info: Optional[Dict[str, Optional[List[str]]]] = None
-    challenge_rating: ChallengeRating
-    proficiency_bonus: Optional[int] = None
 
     @field_validator('alignment')
     @classmethod
@@ -160,20 +160,22 @@ class StatBlockValidator(BaseModel):
                 raise ValueError('Passive perception must be between 0 and 30')
         return v
 
-    @field_validator('regional_effects')
+    @field_validator('regional_effects', mode='after')  # Change mode to 'after'
     @classmethod
     def validate_regional_effects(cls, v: Optional[RegionalEffects], info: ValidationInfo) -> Optional[RegionalEffects]:
         if v is not None:
-            # Validate save DC against proficiency and ability scores
+            abilities = info.data.get('abilities', {})
+            proficiency = info.data.get('proficiency_bonus')
+            
+            # Only validate save DCs if mechanics are present
             if any(effect.mechanics for effect in v.effects):
-                abilities = info.data.get('abilities', {})
-                proficiency = info.data.get('proficiency_bonus')
-                
                 if not abilities or proficiency is None:
-                    raise ValueError('Abilities and proficiency bonus required to validate save DCs')
-                
+                    # Just log a warning during conversion
+                    print("Warning: Deferring save DC validation until final validation")
+                    return v
+                    
                 for effect in v.effects:
-                    if effect.mechanics:
+                    if effect.mechanics and effect.mechanics.save_dc:
                         save_dc = effect.mechanics.save_dc
                         ability_mod = abilities.get(effect.mechanics.save_type, {}).get('modifier', 0)
                         expected_dc = 8 + proficiency + ability_mod

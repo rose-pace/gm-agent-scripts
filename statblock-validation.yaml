@@ -457,12 +457,15 @@ validation_rules:
   regional_effects:
     constraints:
       range:
-        - pattern: "^\\d+ (?:feet|miles)$"
-        - required: true
+        optional: true
+        when_present:
+          - type: string
+          - pattern: "^\\d+ (?:feet|miles)$"
       duration:
-        - type: string
-        - min_length: 1
-        - required: true
+        optional: true
+        when_present:          
+          - type: string
+          - min_length: 1
       effects:
         - type: array
         - min_items: 1
@@ -499,6 +502,11 @@ validation_rules:
 
   description:
     constraints:
+      unparsed_text:
+        - type: string
+        - optional: true
+        - min_length: 10
+        - max_length: 2000
       appearance:
         - type: string
         - optional: true

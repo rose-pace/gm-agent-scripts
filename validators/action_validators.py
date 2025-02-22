@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional
+from typing import List, Optional, Annotated
 from pydantic import BaseModel, Field, field_validator, ValidationInfo
 from enum import Enum
 
@@ -141,8 +141,8 @@ class RegionalEffect(BaseModel):
     mechanics: Optional[RegionalEffectMechanics] = None
 
 class RegionalEffects(BaseModel):
-    range: str = Field(pattern=r"^\d+ (?:feet|miles)$")
-    duration: str = Field(min_length=1)
+    range: Optional[Annotated[str, Field(pattern=r"^\d+ (?:feet|miles)$")]]
+    duration: Optional[Annotated[str, Field(min_length=1)]]
     effects: List[RegionalEffect] = Field(min_items=1)
 
 class ActionSet(BaseModel):

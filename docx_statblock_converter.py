@@ -712,11 +712,16 @@ class DocxStatBlockConverter:
         # Extract range and duration from first paragraph
         first_para = self._normalize_text(paragraphs[0].text)
         range_match = re.search(r"within (\d+ (?:feet|miles))", first_para)
-        duration_match = re.search(r"(?:remain|persist|last).*?(?:for|until) (.*?)(?:\.|$)", first_para)
+
+        duration = None
+        if first_para:
+            sentences = [s.strip() for s in first_para.split('.') if s.strip()]
+            if sentences:
+                duration = sentences[-1]
         
         regional_effects = {
             "range": range_match.group(1) if range_match else None,
-            "duration": duration_match.group(1).strip() if duration_match else None,
+            "duration": duration,
             "effects": []
         }
         
@@ -758,7 +763,7 @@ class DocxStatBlockConverter:
             mechanics["save_type"] = dc_match.group(2).lower()
             
             # Look for effects after the saving throw
-            effects_match = re.search(r"saving throw(?:,|\.) (.+?)(?:$|\.(?:\s|$))", text)
+            effects_match = re.search(r"saving throw(?:,|\.|\s?or) (.+?)(?:$|\.(?:\s|$))", text)
             if effects_match:
                 mechanics["effects"] = effects_match.group(1).strip()
         
