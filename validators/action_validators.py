@@ -131,7 +131,7 @@ class LairAction(BaseModel):
 class RegionalEffectMechanics(BaseModel):
     save_dc: int = Field(ge=1, le=30)
     save_type: str = Field(
-        regex="^(strength|dexterity|constitution|intelligence|wisdom|charisma)$"
+        pattern=r'^(strength|dexterity|constitution|intelligence|wisdom|charisma)$'
     )
     effects: str = Field(min_length=1)
 

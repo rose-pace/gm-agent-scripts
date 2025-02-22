@@ -1,4 +1,4 @@
-from typing import List, Set
+from typing import List
 
 class DamageTypeParser:
     # Standard damage types that can't be modified by nonmagical

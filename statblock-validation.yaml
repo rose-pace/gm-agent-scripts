@@ -497,6 +497,29 @@ validation_rules:
                   - min_length: 1
                   - required: true
 
+  description:
+    constraints:
+      appearance:
+        - type: string
+        - optional: true
+        - min_length: 10
+        - max_length: 2000
+      personality:
+        - type: string
+        - optional: true
+        - min_length: 10
+        - max_length: 2000
+      background:
+        - type: string
+        - optional: true
+        - min_length: 10
+        - max_length: 2000
+      tactics:
+        - type: string
+        - optional: true
+        - min_length: 10
+        - max_length: 2000
+
 # Cross-validation rules
 cross_validation:
   - rule: "proficiency_bonus_range"

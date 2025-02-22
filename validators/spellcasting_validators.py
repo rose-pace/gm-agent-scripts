@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
-from typing import List, Optional, Dict, Union
+from pydantic import BaseModel, ValidationInfo, field_validator
+from typing import List, Optional
 from enum import Enum
 
 class SpellcastingType(str, Enum):

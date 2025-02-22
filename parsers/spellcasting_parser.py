@@ -31,7 +31,9 @@ class SpellcastingParser:
         # Parse DC and attack bonus
         dc, attack_bonus, base_modifier = self._parse_modifiers(text)
         if not base_modifier:
-            base_modifier = abilities[spellcasting_data['ability']].modifier
+            base_modifier = abilities[spellcasting_data['ability'].value.lower()].get('modifier')
+        if not base_modifier:
+            raise ValueError('Spellcasting ability modifier not found')
         spellcasting_data.update({
             'dc': dc,
             'attack_bonus': attack_bonus,

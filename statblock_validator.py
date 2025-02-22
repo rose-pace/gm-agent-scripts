@@ -60,6 +60,13 @@ class Languages(BaseModel):
     telepathy: Optional[int] = None
     special: Optional[str] = None
 
+class Description(BaseModel):
+    unparsed_text: str = None # Original text before classification
+    appearance: Optional[str] = None
+    personality: Optional[str] = None  
+    background: Optional[str] = None
+    tactics: Optional[str] = None
+
 class StatBlockValidator(BaseModel):
     """Pydantic model for stat block validation"""
     metadata: Metadata
@@ -84,7 +91,7 @@ class StatBlockValidator(BaseModel):
     legendary_actions: Optional[LegendaryActionSet] = None
     lair_actions: Optional[LairActionSet] = None
     regional_effects: Optional[RegionalEffects] = None
-    description: Optional[Dict[str, Optional[str]]] = None
+    description: Optional[Description] = None
     additional_info: Optional[Dict[str, Optional[List[str]]]] = None
     challenge_rating: ChallengeRating
     proficiency_bonus: Optional[int] = None

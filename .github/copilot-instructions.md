@@ -8,7 +8,7 @@
 
 ## Coding Guidelines
 - Always check any edits against the schema in statblock-schema.yaml and validation in statblock-validation.yaml
-- Prefer single quotes for strings
+- Use single quotes for strings
 - Add concise and descriptive comments to clarify logic
 - Use pydantic v2 for all validation
 - Prefer string comparisons in lowercase if case is not needed

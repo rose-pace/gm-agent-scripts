@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ValidationInfo, field_validator
 from typing import Union
 from fractions import Fraction
-from .dnd_constants import CR_TO_XP
+from dnd_constants import CR_TO_XP
 
 class ChallengeRating(BaseModel):
     rating: Union[float, str]  # Can be float or fraction string like "1/4"

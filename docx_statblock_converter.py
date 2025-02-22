@@ -5,12 +5,14 @@ from datetime import datetime
 from pathlib import Path
 from docx import Document
 from docx.text.paragraph import Paragraph
+from docx.table import Table
 from rich.console import Console
-from rich.table import Table
+from rich.table import Table as RichTable
 from statblock_validator import StatBlockValidator
+from parsers.description_parser import DescriptionParser
 from parsers.spellcasting_parser import SpellcastingParser
 from validators.action_validators import WeaponType
-from validators.dnd_constants import CR_TO_XP  # Add this import
+from dnd_constants import CR_TO_XP  # Add this import
 from parsers.damage_type_parser import DamageTypeParser
 
 class DocxStatBlockConverter:
@@ -21,7 +23,7 @@ class DocxStatBlockConverter:
         self.current_creature = {}
         self.console = Console()
 
-    def extract_text_from_docx(self, docx_path: str) -> Dict[str, List[Paragraph]]:
+    def extract_text_from_docx(self, docx_path: str) -> tuple[Dict[str, List[Paragraph]], List[Table]]:
         """
         Extract text from DOCX file while preserving formatting.
         Returns dictionary of sections with their paragraphs.
@@ -55,7 +57,7 @@ class DocxStatBlockConverter:
         if current_paragraphs:
             sections[current_section] = current_paragraphs
 
-        return sections
+        return sections, doc.tables
     
     def _is_main_header(self, paragraph: Paragraph) -> bool:
         """
@@ -83,7 +85,7 @@ class DocxStatBlockConverter:
 
     def convert_docx_to_schema(self, docx_path: str) -> Dict:
         """Convert DOCX stat block to schema format."""
-        sections = self.extract_text_from_docx(docx_path)
+        sections, tables = self.extract_text_from_docx(docx_path)
         
         # Initialize with required fields
         self.current_creature = {
@@ -121,7 +123,7 @@ class DocxStatBlockConverter:
         # Process main sections
         self._process_subheader(sections['subheader'])
         self._process_core_stats(sections.get('corestats', []))
-        self._process_abilities(sections.get('corestats', []))
+        self._process_abilities(sections.get('corestats', []), tables)
         self._process_defenses(sections.get('corestats', []))
         self._process_senses_and_languages(sections.get('corestats', []))
         self._process_traits(sections.get('traits', []))
@@ -144,6 +146,8 @@ class DocxStatBlockConverter:
             self._process_lair_actions(sections['lair_actions'])
         if 'regional_effects' in sections:
             self._process_regional_effects(sections['regional_effects'])
+        if 'description' in sections:
+            self._process_description(sections['description'])
 
         # Validate converted data
         self._validate_converted_data()
@@ -165,7 +169,7 @@ class DocxStatBlockConverter:
         """
         Generate a detailed report of the conversion process.
         """
-        table = Table(title="Conversion Report")
+        table = RichTable(title="Conversion Report")
         table.add_column("Section", style="cyan")
         table.add_column("Status", style="green")
         table.add_column("Notes", style="yellow")
@@ -189,7 +193,8 @@ class DocxStatBlockConverter:
         'regional effects': 'regional_effects',
         'traits': 'traits',
         'bonus actions': 'bonus_actions',
-        'reactions': 'reactions'
+        'reactions': 'reactions',
+        'description': 'description'
     }
 
     MELEE_ATTACK_PATTERN = r'^Melee (?:Weapon|Spell) Attack:\s*(?P<bonus>[+-]\d+) to hit, reach (?P<distance>\d+ ft\.)'
@@ -321,24 +326,34 @@ class DocxStatBlockConverter:
         """Get XP value for a given Challenge Rating."""
         return CR_TO_XP.get(str(cr), 0)
 
-    def _process_abilities(self, paragraphs: List[Paragraph]) -> None:
-        """Process abilities section - let Pydantic handle validation."""
+    def _process_abilities(self, paragraphs: List[Paragraph], tables: List[Table]) -> None:
+        """Process abilities section including table-based formats."""
         abilities = {}
         saving_throws = []
         skills = []
-        
+
+        # First try to find the ability scores table
+        for table in tables:
+            if len(table.rows) >= 2 and len(table.rows[0].cells) >= 6:
+                # Check if this is the ability score table by looking for STR, DEX, etc.
+                header_cells = [cell.text.strip().upper() for cell in table.rows[0].cells]
+                if all(ability in header_cells for ability in ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']):
+                    # Found the ability score table
+                    ability_values = table.rows[1].cells
+                    for i, ability in enumerate(['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma']):
+                        # Parse the cell which might contain both score and modifier like "14 (+2)"
+                        cell_text = ability_values[i].text.strip()
+                        score_mod_match = re.match(r'(\d+)\s*\(([+-]\d+)\)', cell_text)
+                        if score_mod_match:
+                            abilities[ability] = {
+                                'score': int(score_mod_match.group(1)),
+                                'modifier': int(score_mod_match.group(2))
+                            }
+                    break
+
+        # Continue with existing saving throws and skills parsing
         for para in paragraphs:
             text = self._normalize_text(para.text)
-            # Parse ability scores
-            matches = re.finditer(r'(\w{3})\s+(\d+)\s*\(([+-]\d+)\)', text)
-            for match in matches:
-                ability = match.group(1).lower()
-                score = int(match.group(2))
-                modifier = int(match.group(3))
-                abilities[ability] = {
-                    'score': score,
-                    'modifier': modifier
-                }
             
             # Parse saving throws
             if text.startswith("Saving Throws"):
@@ -393,7 +408,7 @@ class DocxStatBlockConverter:
         leading_bold = ''
         for run in paragraph.runs:
             if self._is_run_bold(run):
-                name += run.text
+                leading_bold += run.text
             else:
                 break
         
@@ -494,7 +509,7 @@ class DocxStatBlockConverter:
                     
                     # Parse damage
                     damage_pattern = r'Hit:\s*\d+\s*\(([\dd+\s-]+)\)\s*([\w\s,]+)\s*damage'
-                    two_handed_pattern = r'or\s*\d+\s*\(([\dd+\s-]+)\)\s*\2\s*damage when used with two hands'
+                    two_handed_pattern = r'or\s*\d+\s*\(([\dd+\s-]+)\)\s*([\w\s,]+)\s*damage when used with two hands'
                     
                     damage_match = re.search(damage_pattern, description)
                     two_handed_match = re.search(two_handed_pattern, description)
@@ -748,3 +763,8 @@ class DocxStatBlockConverter:
                 mechanics["effects"] = effects_match.group(1).strip()
         
         return mechanics if mechanics else None
+
+    def _process_description(self, paragraphs: List[Paragraph]) -> None:
+        """Process description section."""
+        description = DescriptionParser.classify_text("\n".join([self._normalize_text(para.text) for para in paragraphs]))
+        self.current_creature['description'] = description
