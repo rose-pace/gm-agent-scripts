@@ -62,8 +62,8 @@ class SpellcastingParser:
         text_lower = text.lower()
         for pattern, ability in self.ABILITY_PATTERNS.items():
             if pattern in text_lower:
-                return ability
-        return SpellcastingAbility.WISDOM  # Default if not found
+                return ability.value
+        return SpellcastingAbility.WISDOM.value  # Default if not found
 
     def _parse_modifiers(self, text: str) -> Tuple[int, int, int]:
         """Parse DC, attack bonus, and base modifier."""
@@ -79,38 +79,44 @@ class SpellcastingParser:
 
     def _parse_innate_spells(self, text: str, data: Dict) -> None:
         """Parse innate spellcasting details."""
+        lines = text.splitlines()
+        for line in lines:
         # At will spells
-        at_will_match = re.search(r'At will:\s*([^\.]+)', text)
-        if at_will_match:
-            data['at_will'] = self._parse_spell_list(at_will_match.group(1))
+            at_will_match = re.search(r'At will:\s*([^\.]+)', line)
+            if at_will_match:
+                data['at_will'] = self._parse_spell_list(at_will_match.group(1))
+                continue
 
-        # Limited use spells
-        for freq in ['3/day', '2/day', '1/day', '1/rest', '1/dawn']:
-            freq_match = re.search(f'{freq}(?: [Ee]{1}ach)?:\s*([^\.]+)', text)
-            if freq_match:
-                data['limited_use'].append({
-                    'frequency': freq,
-                    'spells': self._parse_spell_list(freq_match.group(1))
-                })
+            # Limited use spells
+            for freq in ['3/day', '2/day', '1/day', '1/rest', '1/dawn']:
+                freq_match = re.search(f'{freq}(?: [Ee]{1}ach)?:\s*([^\.]+)', line)
+                if freq_match:
+                    data['limited_use'].append({
+                        'frequency': freq,
+                        'spells': self._parse_spell_list(freq_match.group(1))
+                    })
 
     def _parse_regular_spells(self, text: str, data: Dict) -> None:
         """Parse regular spellcasting details."""
-        # Parse cantrips
-        cantrip_match = re.search(r'Cantrips \(at will\):\s*([^\.]+)', text)
-        if cantrip_match:
-            data['at_will'] = self._parse_spell_list(cantrip_match.group(1))
+        lines = text.splitlines()
+        for line in lines:
+            # Parse cantrips
+            cantrip_match = re.search(r'Cantrips \(at will\):\s*([^\.]+)', line)
+            if cantrip_match:
+                data['at_will'] = self._parse_spell_list(cantrip_match.group(1))
+                continue
 
-        # Parse spell slots
-        slot_pattern = r'(\d)(?:st|nd|rd|th) level \((\d) slots?\):\s*([^\.]+)'
-        for match in re.finditer(slot_pattern, text):
-            level = int(match.group(1))
-            slots = int(match.group(2))
-            spells = self._parse_spell_list(match.group(3))
-            data['spell_slots'].append({
-                'level': level,
-                'slots': slots,
-                'spells': spells
-            })
+            # Parse spell slots
+            slot_pattern = r'(\d)(?:st|nd|rd|th) level \((\d) slots?\):\s*([^\.]+)'
+            for match in re.finditer(slot_pattern, line):
+                level = int(match.group(1))
+                slots = int(match.group(2))
+                spells = self._parse_spell_list(match.group(3))
+                data['spell_slots'].append({
+                    'level': level,
+                    'slots': slots,
+                    'spells': spells
+                })
 
     def _parse_spell_list(self, text: str) -> List[Dict]:
         """Parse comma-separated spell list with optional notes."""
