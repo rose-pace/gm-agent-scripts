@@ -52,29 +52,47 @@ class LimitedUseSpells(BaseModel):
             raise ValueError('Frequency must start with a positive number')
         return v
 
+class SpecialBonus(BaseModel):
+    description: str
+    value: int
+
 class SpellcastingTrait(BaseModel):
     type: SpellcastingType
     ability: SpellcastingAbility
     dc: int
     attack_bonus: int
     base_modifier: int
-    special_bonuses: Optional[List[Dict[str, Union[str, int]]]] = None
+    special_bonuses: Optional[List[SpecialBonus]] = None
     at_will: Optional[List[Spell]] = None
     spell_slots: Optional[List[SpellLevel]] = None
     limited_use: Optional[List[LimitedUseSpells]] = None
 
     @field_validator('dc')
     @classmethod
-    def validate_dc(cls, v: int) -> int:
+    def validate_dc(cls, v: int, info: ValidationInfo) -> int:
         if not (0 <= v <= 30):
             raise ValueError('Spell save DC must be between 0 and 30')
+        # Validate DC matches ability modifier + proficiency + 8
+        ability_mod = info.data.get('base_modifier')
+        if ability_mod is not None:
+            proficiency = info.data.get('proficiency_bonus', 2)  # Default to 2 if not provided
+            expected_dc = 8 + ability_mod + proficiency
+            if v != expected_dc:
+                raise ValueError(f'DC {v} does not match calculated DC {expected_dc}')
         return v
 
     @field_validator('attack_bonus')
     @classmethod
-    def validate_attack_bonus(cls, v: int) -> int:
+    def validate_attack_bonus(cls, v: int, info: ValidationInfo) -> int:
         if not (0 <= v <= 30):
             raise ValueError('Spell attack bonus must be between 0 and 30')
+        # Validate attack bonus matches ability modifier + proficiency
+        ability_mod = info.data.get('base_modifier')
+        if ability_mod is not None:
+            proficiency = info.data.get('proficiency_bonus', 2)
+            expected_bonus = ability_mod + proficiency
+            if v != expected_bonus:
+                raise ValueError(f'Attack bonus {v} does not match calculated bonus {expected_bonus}')
         return v
 
     @field_validator('base_modifier')
@@ -82,4 +100,15 @@ class SpellcastingTrait(BaseModel):
     def validate_base_modifier(cls, v: int) -> int:
         if not (-5 <= v <= 10):
             raise ValueError('Base modifier must be between -5 and +10')
+        return v
+
+    @field_validator('special_bonuses')
+    @classmethod
+    def validate_special_bonuses(cls, v: Optional[List[SpecialBonus]]) -> Optional[List[SpecialBonus]]:
+        if v is None:
+            return v
+        # Ensure total bonus doesn't exceed reasonable limits
+        total_bonus = sum(bonus.value for bonus in v)
+        if total_bonus > 10:  # Maximum reasonable total bonus
+            raise ValueError('Total special bonuses exceed reasonable limits')
         return v

@@ -233,18 +233,54 @@ validation_rules:
         - min: 0
         - max: 30
         - validate_against_ability: true  # Must match 8 + proficiency + ability modifier
-      spell_slots:
-        level:
-          - type: integer
-          - min: 1
-          - max: 9
-        slots:
-          - type: integer
-          - min: 1
-          - max: 4
-      limited_use:
-        frequency:
-          - pattern: "^\\d+/(?:day|short rest|long rest)$"
+      attack_bonus:
+        - type: integer
+        - validate_against_ability: true  # Must match proficiency + ability modifier
+      base_modifier:
+        - type: integer
+        - min: -5
+        - max: 10
+      spells:
+        at_will:
+          - type: array
+          - items:
+              name:
+                - type: string
+              notes:
+                - type: string
+                - optional: true
+        spell_slots:
+          - type: array
+          - items:
+              level:
+                - type: integer
+                - min: 1
+                - max: 9
+              slots:
+                - type: integer
+                - min: 1
+                - max: 4
+              spells:
+                - type: array
+                - items:
+                    name:
+                      - type: string
+                    notes:
+                      - type: string
+                      - optional: true
+        limited_use:
+          - type: array
+          - items:
+              frequency:
+                - pattern: "^\\d+/(?:day|short rest|long rest)$"
+              spells:
+                - type: array
+                - items:
+                    name:
+                      - type: string
+                    notes:
+                      - type: string
+                      - optional: true
 
   actions:
     constraints:

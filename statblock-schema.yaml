@@ -105,15 +105,15 @@ traits:
     usage: string | null  # Usage limitations like "3/day"
     
 # Spellcasting (if applicable)
-  spellcasting:
-    type: string  # e.g., "Innate", "Regular", "Pact Magic"
-    ability: string  # Spellcasting ability
-    dc: integer
-    attack_bonus: integer
-    base_modifier: integer  # The ability modifier used for spellcasting
-    special_bonuses:  # For unusual cases where spell attacks get additional bonuses
-      - description: string
-        value: integer
+spellcasting:
+  type: string  # e.g., "Innate", "Regular", "Pact Magic"
+  ability: string  # Spellcasting ability
+  dc: integer
+  attack_bonus: integer
+  base_modifier: integer  # The ability modifier used for spellcasting
+  special_bonuses:  # For unusual cases where spell attacks get additional bonuses
+    - description: string
+      value: integer
   spells:
     at_will:
       - name: string

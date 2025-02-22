@@ -8,6 +8,7 @@ from docx.text.paragraph import Paragraph
 from rich.console import Console
 from rich.table import Table
 from statblock_validator import StatBlockValidator
+from parsers.spellcasting_parser import SpellcastingParser
 from validators.action_validators import WeaponType
 from validators.dnd_constants import CR_TO_XP  # Add this import
 
@@ -331,25 +332,33 @@ class DocxStatBlockConverter:
         Extract name from contiguous bold runs at start of paragraph.
         Returns tuple of (name, remaining_text).
         """
-        name = ''
+        leading_bold = ''
         for run in paragraph.runs:
             if self._is_run_bold(run):
-                name += self._normalize_text(run.text)
+                name += run.text
             else:
                 break
         
-        name = name.strip(' .:')
-        description = self._normalize_text(paragraph.text[len(name):]).strip(' .:')
+        name = self._normalize_text(leading_bold.strip(' .:'))
+        description = self._normalize_text(paragraph.text[len(leading_bold):]).strip(' .:')
         return name, description
 
-    def _process_actions(self, paragraphs: List[Paragraph], action_type: str = "standard") -> List[dict[str, Any]]:
+    def _process_actions(self, paragraphs: List[Paragraph], action_type: str = "standard") -> List[Dict]:
+        """Process actions section with spell action detection."""
         actions = []
         current_action = None
+        spellcasting_parser = SpellcastingParser()
         
         for para in paragraphs:
             if para.runs and self._is_run_bold(para.runs[0]):  # Updated check
                 if current_action:
-                    actions.append(current_action)
+                    # Check if current action is spellcasting
+                    if 'spellcasting' in current_action['name'].lower():
+                        spellcasting = spellcasting_parser.parse_spellcasting_trait(f'{current_action['name']} {current_action['description']}')
+                        if spellcasting:
+                            self.current_creature['spellcasting'] = spellcasting
+                    else:
+                        actions.append(current_action)
                 
                 name, description = self._extract_name_from_bold_runs(para)
                 
@@ -425,7 +434,13 @@ class DocxStatBlockConverter:
         
         # Add last action
         if current_action:
-            actions.append(current_action)
+            # Check if current action is spellcasting
+            if 'spellcasting' in current_action['name'].lower():
+                spellcasting = spellcasting_parser.parse_spellcasting_trait(f'{current_action['name']} {current_action['description']}')
+                if spellcasting:
+                    self.current_creature['spellcasting'] = spellcasting
+            else:
+                actions.append(current_action)
         
         return actions
 
@@ -551,28 +566,40 @@ class DocxStatBlockConverter:
                     self.current_creature["languages"]["spoken"] = ["—"]
 
     def _process_traits(self, paragraphs: List[Paragraph]) -> None:
-        """Process traits section."""
+        """Process traits section with spellcasting detection."""
         traits = []
         current_trait = None
-        
+        spellcasting_parser = SpellcastingParser()
+
         for para in paragraphs:
-            if para.runs and self._is_run_bold(para.runs[0]):  # Updated check
+            if para.runs and self._is_run_bold(para.runs[0]):
                 if current_trait:
-                    traits.append(current_trait)
-                
+                    # Check if current trait is spellcasting
+                    if 'spellcasting' in current_trait['name'].lower():
+                        spellcasting = spellcasting_parser.parse_spellcasting_trait(f'{current_trait['name']} {current_trait['description']}')
+                        if spellcasting:
+                            self.current_creature['spellcasting'] = spellcasting
+                    else:
+                        traits.append(current_trait)
+
                 name, description = self._extract_name_from_bold_runs(para)
-                
                 current_trait = {
-                    "name": name,
-                    "description": description
+                    'name': name,
+                    'description': description
                 }
             elif current_trait:
-                current_trait["description"] += f"\n{self._normalize_text(para.text)}"
-        
+                current_trait['description'] += f'\n{self._normalize_text(para.text)}'
+
+        # Handle last trait
         if current_trait:
-            traits.append(current_trait)
-        
-        self.current_creature["traits"] = traits
+            if 'spellcasting' in current_trait['name'].lower():
+                spellcasting = spellcasting_parser.parse_spellcasting_trait(f'{current_trait['name']} {current_trait['description']}')
+                if spellcasting:
+                    self.current_creature['spellcasting'] = spellcasting
+            else:
+                traits.append(current_trait)
+
+        self.current_creature['traits'] = traits if traits else None
 
     def _process_regional_effects(self, paragraphs: List[Paragraph]) -> None:
         """Process regional effects section."""
