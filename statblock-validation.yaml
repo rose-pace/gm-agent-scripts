@@ -86,30 +86,40 @@ validation_rules:
           - pattern: "^\\d+d\\d+(?:\\s*[+-]\\s*\\d+)?$"  # e.g., "27d12 + 150"
       speed:
         walk:
-          - type: integer
-          - multiple_of: 5
-          - min: 0
-          - max: 120
+          optional: true
+          when_present:
+            - type: integer
+            - multiple_of: 5
+            - min: 0
+            - max: 120
         fly:
-          - type: integer
-          - multiple_of: 5
-          - min: 0
-          - max: 120
+          optional: true
+          when_present:
+            - type: integer
+            - multiple_of: 5
+            - min: 0
+            - max: 120
         swim:
-          - type: integer
-          - multiple_of: 5
-          - min: 0
-          - max: 120
+          optional: true
+          when_present:
+            - type: integer
+            - multiple_of: 5
+            - min: 0
+            - max: 120
         burrow:
-          - type: integer
-          - multiple_of: 5
-          - min: 0
-          - max: 120
+          optional: true
+          when_present:
+            - type: integer
+            - multiple_of: 5
+            - min: 0
+            - max: 120
         climb:
-          - type: integer
-          - multiple_of: 5
-          - min: 0
-          - max: 120
+          optional: true
+          when_present:
+            - type: integer
+            - multiple_of: 5
+            - min: 0
+            - max: 120
 
   abilities:
     required_fields:

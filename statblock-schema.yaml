@@ -40,7 +40,6 @@ core_stats:
     burrow: integer | null
     climb: integer | null
     hover: boolean
-    units: string  # Usually "ft."
     special: string | null  # Any special movement notes
 
 # Ability scores

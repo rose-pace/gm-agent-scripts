@@ -310,15 +310,31 @@ class DocxStatBlockConverter:
             
             # Speed
             elif text.startswith("Speed"):
-                speeds = {}
+                speeds = { }
                 speed_text = text.replace("Speed", "").strip()
                 speed_parts = speed_text.split(", ")
+
+                speed = ['walk', 'fly', 'swim', 'burrow', 'climb']
+                for speed_type in speed:
+                    part = next((part for part in speed_parts if speed_type in part), None)
+
+                special = []
                 
                 for part in speed_parts:
-                    speed_match = re.match(r"(\w+)?\s*(\d+)\s*ft\.?", part)
+
+                    speed_match = re.match(r"(\d+)\s*ft\.?([ \w]*)(?:\.|\n)?", part)
                     if speed_match:
                         speed_type = speed_match.group(1) or "walk"
-                        speeds[speed_type.lower()] = int(speed_match.group(2))
+                        speeds[speed_type.lower()] = int(speed_match.group(1))
+
+                        extra = speed_match.group(2)
+                        if 'hover' in extra:
+                            speeds['hover'] = True
+                        elif extra:
+                            special.append(extra.strip())
+
+                if special:
+                    speeds['special'] = '; '.join(s.strip() for s in special if s.strip())
                 
                 self.current_creature["speed"] = speeds
 

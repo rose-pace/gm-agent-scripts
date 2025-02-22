@@ -32,7 +32,6 @@ class Speed(BaseModel):
     burrow: Optional[int] = None
     climb: Optional[int] = None
     hover: Optional[bool] = None
-    units: str = "ft."
     special: Optional[str] = None
 
 class AbilityScore(BaseModel):
