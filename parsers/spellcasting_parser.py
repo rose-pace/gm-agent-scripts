@@ -52,10 +52,10 @@ class SpellcastingParser:
         """Determine spellcasting type from text."""
         text_lower = text.lower()
         if 'innate spellcasting' in text_lower:
-            return SpellcastingType.INNATE
+            return SpellcastingType.INNATE.value
         elif 'pact magic' in text_lower:
-            return SpellcastingType.PACT_MAGIC
-        return SpellcastingType.REGULAR
+            return SpellcastingType.PACT_MAGIC.value
+        return SpellcastingType.REGULAR.value
 
     def _parse_ability(self, text: str) -> SpellcastingAbility:
         """Parse spellcasting ability."""
