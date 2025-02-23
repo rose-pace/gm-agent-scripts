@@ -22,7 +22,6 @@ class DescriptionParser:
         Classify sentences into description categories using keyword/context matching
         """
         result = {
-            'unparsed_text': text,
             'appearance': [],
             'personality': [],
             'background': [],
@@ -80,4 +79,6 @@ class DescriptionParser:
                         result[category].append(sentence)
         
         # Join sentences for each category
-        return {k: ' '.join(v) if v else None for k, v in result.items()}
+        description = {k: ' '.join(v) if v else None for k, v in result.items()}
+        description['unparsed_text'] = text
+        return description
