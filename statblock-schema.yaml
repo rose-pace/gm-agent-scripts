@@ -41,6 +41,9 @@ core_stats:
     climb: integer | null
     hover: boolean
     special: string | null  # Any special movement notes
+  initiative: 
+    bonus: integer | null  # Initiative bonus
+    average: integer | null  # Average initiative roll (10 + bonus)
 
 # Ability scores
 abilities:
@@ -71,6 +74,7 @@ proficiencies:
   skills:
     - name: string
       modifier: integer
+  bonus: integer | null 
   
 # Defensive traits
 defenses:
@@ -101,7 +105,13 @@ languages:
 traits:
   - name: string
     description: string
-    usage: string | null  # Usage limitations like "3/day"
+    usage:
+      type: string  # recharge, per_day, per_short_rest, per_long_rest, costs
+      value: integer | null  # For costs and single recharge values
+      times: integer | null  # For uses per time period
+      times_in_lair: integer | null  # For lair actions
+      range: array[integer] | null  # For recharge ranges like [5,6]
+      description: string | null  # Description of the usage
     
 # Spellcasting (if applicable)
 spellcasting:
@@ -152,7 +162,9 @@ actions:
         type: string  # recharge, per_day, per_short_rest, per_long_rest, costs
         value: integer | null  # For costs and single recharge values
         times: integer | null  # For uses per time period
+        times_in_lair: integer | null  # For lair actions
         range: array[integer] | null  # For recharge ranges like [5,6]
+        description: string | null  # Description of the usage
   
   bonus_actions:
     - name: string
@@ -175,7 +187,9 @@ actions:
         type: string  # recharge, per_day, per_short_rest, per_long_rest, costs
         value: integer | null  # For costs and single recharge values
         times: integer | null  # For uses per time period
+        times_in_lair: integer | null  # For lair actions
         range: array[integer] | null  # For recharge ranges like [5,6]
+        description: string | null  # Description of the usage
   
   reactions:
     - name: string
@@ -198,7 +212,9 @@ actions:
         type: string  # recharge, per_day, per_short_rest, per_long_rest, costs
         value: integer | null  # For costs and single recharge values
         times: integer | null  # For uses per time period
+        times_in_lair: integer | null  # For lair actions
         range: array[integer] | null  # For recharge ranges like [5,6]
+        description: string | null  # Description of the usage
 
 # Legendary actions (if applicable)
 legendary_actions:
@@ -212,7 +228,9 @@ legendary_actions:
         type: string  # recharge, per_day, per_short_rest, per_long_rest, costs
         value: integer | null  # For costs and single recharge values
         times: integer | null  # For uses per time period
+        times_in_lair: integer | null  # For lair actions
         range: array[integer] | null  # For recharge ranges like [5,6]
+        description: string | null  # Description of the usage
 
 # Lair actions (if applicable)
 lair_actions:
@@ -226,6 +244,7 @@ lair_actions:
         value: integer | null  # For costs and single recharge values
         times: integer | null  # For uses per time period
         range: array[integer] | null  # For recharge ranges like [5,6]
+        description: string | null  # Description of the usage
 
 # Regional effects (if applicable)
 regional_effects:

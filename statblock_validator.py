@@ -17,6 +17,13 @@ class Metadata(BaseModel):
     source: str
     tags: Optional[List[str]] = None
 
+class CreatureInfo(BaseModel):
+    size: str
+    type: str
+    subtypes: Optional[List[str]] = None
+    alignment: str
+    challenge_rating: ChallengeRating
+
 class ArmorClass(BaseModel):
     value: int
     type: Optional[str] = None
@@ -34,6 +41,16 @@ class Speed(BaseModel):
     hover: Optional[bool] = None
     special: Optional[str] = None
 
+class Initiative(BaseModel):
+    bonus: int
+    average: int
+
+class CoreStats(BaseModel):
+    armor_class: ArmorClass
+    hit_points: HitPoints
+    speed: Speed
+    initiative: Initiative
+
 class AbilityScore(BaseModel):
     score: int
     modifier: int
@@ -45,6 +62,16 @@ class SavingThrow(BaseModel):
 class Skill(BaseModel):
     name: str
     modifier: int
+
+class Proficiencies(BaseModel):
+    saving_throws: Optional[List[SavingThrow]] = None
+    skills: Optional[List[Skill]] = None
+    bonus: Optional[int] = None
+
+class Defenses(BaseModel):
+    damage_resistances: Optional[List[str]] = None
+    damage_immunities: Optional[List[str]] = None
+    condition_immunities: Optional[List[str]] = None
 
 class Senses(BaseModel):
     darkvision: Optional[int] = None
@@ -69,23 +96,13 @@ class Description(BaseModel):
 class StatBlockValidator(BaseModel):
     """Pydantic model for stat block validation"""
     metadata: Metadata
-    size: str
-    type: str
-    subtypes: Optional[List[str]] = None
-    alignment: str
-    armor_class: ArmorClass
-    hit_points: HitPoints
-    speed: Speed
+    creature_info: CreatureInfo
+    core_stats: CoreStats    
     abilities: Dict[str, AbilityScore]
-    saving_throws: Optional[List[SavingThrow]] = None
-    skills: Optional[List[Skill]] = None
-    damage_resistances: Optional[List[str]] = None
-    damage_immunities: Optional[List[str]] = None
-    condition_immunities: Optional[List[str]] = None
+    proficiency: Proficiencies
+    defenses: Optional[Defenses]    
     senses: Senses
     languages: Languages
-    challenge_rating: ChallengeRating
-    proficiency_bonus: Optional[int] = None
     traits: Optional[List[dict]] = None
     spellcasting: Optional[SpellcastingTrait] = None
     actions: ActionSet

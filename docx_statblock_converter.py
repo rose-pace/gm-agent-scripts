@@ -117,9 +117,18 @@ class DocxStatBlockConverter(BaseParser):
                 'collection': self.collection,
                 'tags': self.tags
             },
-            'damage_resistances': [],
-            'damage_immunities': [],
-            'condition_immunities': [],
+            'creature_info': {},
+            'core_stats': {},
+            'abilities': {},
+            'proficiencies': {
+                'saving_throws': [],
+                'skills': [],
+            },
+            'defenses': {
+                'damage_resistances': [],
+                'damage_immunities': [],
+                'condition_immunities': [],
+            },            
             'senses': {
                 'passive_perception': 10,
                 'special': []
@@ -127,17 +136,18 @@ class DocxStatBlockConverter(BaseParser):
             'languages': {
                 'spoken': []
             },
-            'description': {
-                'appearance': None,
-                'personality': None,
-                'background': None,
-                'tactics': None
-            },
-            'additional_info': {
-                'variant_rules': [],
-                'notes': []
-            }
         }
+        
+        # 'description': {
+        #     'appearance': None,
+        #     'personality': None,
+        #     'background': None,
+        #     'tactics': None
+        # },
+        # 'additional_info': {
+        #     'variant_rules': [],
+        #     'notes': []
+        # },
         
         # Process main sections
         self._process_subheader(sections['subheader'])

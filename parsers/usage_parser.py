@@ -8,9 +8,11 @@ class UsageParser:
     USAGE_PATTERNS = {
         'recharge': r'recharge (\d+)(?:-(\d+))?',
         'per_day': r'(\d+)/day',
+        'per_day_lair': r'(\d+)/day(?:,? or (\d+)/day in lair)?',
         'per_short_rest': r'(\d+)/short rest',
         'per_long_rest': r'(\d+)/long rest',
         'costs': r'costs? (\d+)',
+        'other': r'\((.*?)\)',
     }
 
     @classmethod
@@ -29,13 +31,17 @@ class UsageParser:
                 'range': list(range(start, end + 1)) if start != end else None
             }
         
-        # Check for per day
-        per_day_match = re.search(cls.USAGE_PATTERNS['per_day'], description_lower)
-        if per_day_match:
-            return {
+        # Check for per day with potential lair variation
+        per_day_lair_match = re.search(cls.USAGE_PATTERNS['per_day_lair'], description_lower)
+        if per_day_lair_match:
+            result = {
                 'type': 'per_day',
-                'times': int(per_day_match.group(1))
+                'times': int(per_day_lair_match.group(1))
             }
+            # Add lair usage if specified
+            if per_day_lair_match.group(2):
+                result['times_in_lair'] = int(per_day_lair_match.group(2))
+            return result
             
         # Check for per short rest
         short_rest_match = re.search(cls.USAGE_PATTERNS['per_short_rest'], description_lower)
@@ -59,6 +65,14 @@ class UsageParser:
             return {
                 'type': 'costs',
                 'value': int(cost_match.group(1))
+            }
+        
+        # Check for other usage types (e.g., "(in dragon form only)")
+        other_match = re.search(cls.USAGE_PATTERNS['other'], description_lower)
+        if other_match:
+            return {
+                'type': 'other',
+                'description': other_match.group(1)
             }
         
         return None

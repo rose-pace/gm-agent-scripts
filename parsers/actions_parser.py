@@ -12,7 +12,7 @@ class ActionsParser(BaseParser):
         """Parse attack details from text."""
         attack_match = re.search(
             r'(?:Melee or Ranged|(?:Melee|Ranged)) '
-            r'(?:Weapon|Spell) Attack:\s*([+-]\d+) to hit'
+            r'(?:Weapon|Spell )?Attack(?: Roll)?:\s*([+-]\d+)(?: to hit)?'
             r'(?:, (?:reach|range) ((?:\d+/\d+|\d+) ft\.))?'
             r'(?:or (?:reach|range) ((?:\d+/\d+|\d+) ft\.))?',
             text
@@ -52,16 +52,22 @@ class ActionsParser(BaseParser):
         """Parse damage roll and type from text."""
         damage_pattern = r'Hit:\s*\d+\s*\(([\dd+\s-]+)\)\s*([\w\s,]+)\s*damage'
         two_handed_pattern = r'or\s*\d+\s*\(([\dd+\s-]+)\)\s*([\w\s,]+)\s*damage when used with two hands'
+        # Add pattern for simpler damage format without dice notation
+        simple_damage_pattern = r'Hit:\s*(\d+)\s*([\w\s,]+)\s*damage'
         
         damage_match = re.search(damage_pattern, text)
         two_handed_match = re.search(two_handed_pattern, text)
+        simple_damage_match = re.search(simple_damage_pattern, text)
         
-        if not damage_match:
-            return None
+        if not damage_match and not simple_damage_match:
+            return {
+                "damage": None,
+                "damage_type": None,
+            }
 
         hit_info = {
-            "damage": damage_match.group(1).strip(),
-            "damage_type": damage_match.group(2).strip(),
+            "damage": damage_match.group(1).strip() if damage_match else simple_damage_match.group(1).strip(),
+            "damage_type": damage_match.group(2).strip() if damage_match else simple_damage_match.group(2).strip(),
         }
         
         if two_handed_match:

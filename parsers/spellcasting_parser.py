@@ -13,7 +13,7 @@ class SpellcastingParser:
         r'charisma': SpellcastingAbility.CHARISMA
     }
 
-    def parse_spellcasting_trait(self, text: str, abilities: dict) -> Optional[Dict]:
+    def parse_spellcasting_trait(self, text: str, abilities: dict, proficiency_bonus: int = 2) -> Optional[Dict]:
         """Parse spellcasting trait text into structured data."""
         if not any(x in text.lower() for x in ['spellcasting', 'innate spellcasting']):
             return None
@@ -34,9 +34,10 @@ class SpellcastingParser:
             base_modifier = abilities[spellcasting_data['ability'].lower()].get('modifier')
         if not base_modifier:
             raise ValueError('Spellcasting ability modifier not found')
+        
         spellcasting_data.update({
             'dc': dc,
-            'attack_bonus': attack_bonus,
+            'attack_bonus': max(attack_bonus, base_modifier + proficiency_bonus),
             'base_modifier': base_modifier
         })
 

@@ -94,7 +94,7 @@ class CoreStatsParser(BaseParser):
                 paren_level += 1
             elif char == ')' or char == ']':
                 paren_level -= 1
-            elif char == ',' and paren_level == 0:
+            elif char in [',', ';'] and paren_level == 0:
                 parts.append(''.join(current_part).strip())
                 current_part = []
                 continue
