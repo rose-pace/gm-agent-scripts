@@ -7,6 +7,7 @@ from docx.table import Table
 from rich.console import Console
 from rich.table import Table as RichTable
 from statblock_validator import StatBlockValidator
+from validators.ability_validators import calculate_proficiency_bonus
 
 # Import all parsers
 from parsers.base_parser import BaseParser
@@ -123,6 +124,7 @@ class DocxStatBlockConverter(BaseParser):
             'proficiencies': {
                 'saving_throws': [],
                 'skills': [],
+                'bonus': 2
             },
             'defenses': {
                 'damage_resistances': [],
@@ -137,17 +139,6 @@ class DocxStatBlockConverter(BaseParser):
                 'spoken': []
             },
         }
-        
-        # 'description': {
-        #     'appearance': None,
-        #     'personality': None,
-        #     'background': None,
-        #     'tactics': None
-        # },
-        # 'additional_info': {
-        #     'variant_rules': [],
-        #     'notes': []
-        # },
         
         # Process main sections
         self._process_subheader(sections['subheader'])
@@ -242,25 +233,31 @@ class DocxStatBlockConverter(BaseParser):
             raise ValueError("Incomplete header section")
         
         subheader_data = CoreStatsParser.parse_subheader(subheader)
-        self.current_creature.update(subheader_data)
+        self.current_creature['creature_info'].update(subheader_data)
 
     def _process_core_stats(self, paragraphs: List[Paragraph]) -> None:
         """Process core statistics section."""
+        core_stats = {}
+
         for para in paragraphs:
             text = BaseParser.normalize_text(para.text)
             
             if text.startswith("Armor Class"):
-                self.current_creature["armor_class"] = CoreStatsParser.parse_armor_class(text)
+                core_stats["armor_class"] = CoreStatsParser.parse_armor_class(text)
             elif text.startswith("Hit Points"):
-                self.current_creature["hit_points"] = CoreStatsParser.parse_hit_points(text)
+                core_stats["hit_points"] = CoreStatsParser.parse_hit_points(text)
             elif text.startswith("Speed"):
-                self.current_creature["speed"] = CoreStatsParser.parse_speed(text)
+                core_stats["speed"] = CoreStatsParser.parse_speed(text)
             elif text.startswith("Senses"):
                 self.current_creature["senses"] = CoreStatsParser.parse_senses(text)
             elif text.startswith("Languages"):
                 self.current_creature["languages"] = CoreStatsParser.parse_languages(text)
             elif text.startswith("Challenge"):
-                self.current_creature["challenge_rating"] = CoreStatsParser.parse_challenge_rating(text)
+                cr = CoreStatsParser.parse_challenge_rating(text)
+                self.current_creature['creature_info']['cr'] = cr
+                self.current_creature['proficiencies']['bonus'] = calculate_proficiency_bonus(cr['rating'])
+
+        self.current_creature['core_stats'] = core_stats
 
     def _process_abilities(self, paragraphs: List[Paragraph], tables: List[Table]) -> None:
         """Process abilities section including table-based formats."""
@@ -276,12 +273,26 @@ class DocxStatBlockConverter(BaseParser):
                     self.current_creature["abilities"] = abilities
                     break
 
+        if not self.current_creature['core_stats'].get('initiative'):
+            # If initiative is not in core stats, calculate it from abilities
+            if 'dexterity' in self.current_creature['abilities']:
+                dexterity = self.current_creature['abilities']['dexterity']
+                self.current_creature['core_stats']['initiative'] = {
+                    'bonus': dexterity['modifier'],
+                    'average': dexterity['modifier'] + 10  
+                }
+            else:
+                self.current_creature['core_stats']['initiative'] = {
+                    'bonus': 0,
+                    'average': 10  
+                }
+
         for para in paragraphs:
             text = BaseParser.normalize_text(para.text)
             if text.startswith("Saving Throws"):
-                self.current_creature["saving_throws"] = AbilitiesParser.parse_saving_throws(text)
+                self.current_creature['proficiencies']["saving_throws"] = AbilitiesParser.parse_saving_throws(text)
             elif text.startswith("Skills"):
-                self.current_creature["skills"] = AbilitiesParser.parse_skills(text)
+                self.current_creature['proficiencies']["skills"] = AbilitiesParser.parse_skills(text)
 
     def _process_actions(self, paragraphs: List[Paragraph], action_type: str = "standard") -> List[Dict]:
         """Process actions section."""
@@ -361,13 +372,13 @@ class DocxStatBlockConverter(BaseParser):
             
             if text.startswith("Damage Resistances"):
                 resistances = text.replace("Damage Resistances", "").strip()
-                self.current_creature["damage_resistances"] = DamageTypeParser.parse_damage_types(resistances)
+                self.current_creature['defenses']["damage_resistances"] = DamageTypeParser.parse_damage_types(resistances)
             elif text.startswith("Damage Immunities"):
                 immunities = text.replace("Damage Immunities", "").strip()
-                self.current_creature["damage_immunities"] = DamageTypeParser.parse_damage_types(immunities)
+                self.current_creature['defenses']["damage_immunities"] = DamageTypeParser.parse_damage_types(immunities)
             elif text.startswith("Condition Immunities"):
                 conditions = text.replace("Condition Immunities", "").strip()
-                self.current_creature["condition_immunities"] = [c.strip() for c in conditions.split(", ")]
+                self.current_creature['defenses']["condition_immunities"] = [c.strip() for c in conditions.split(", ")]
 
     def _process_traits(self, paragraphs: List[Paragraph]) -> None:
         """Process traits section with spellcasting detection."""

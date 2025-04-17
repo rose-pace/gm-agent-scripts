@@ -60,10 +60,7 @@ class ActionsParser(BaseParser):
         simple_damage_match = re.search(simple_damage_pattern, text)
         
         if not damage_match and not simple_damage_match:
-            return {
-                "damage": None,
-                "damage_type": None,
-            }
+            return None
 
         hit_info = {
             "damage": damage_match.group(1).strip() if damage_match else simple_damage_match.group(1).strip(),
@@ -87,9 +84,9 @@ class ActionsParser(BaseParser):
             name, text = cls.split_name_description(text)
 
         return {
-            "name": name,
+            "name": cls.extract_parenthetical(name)[0],
             "description": text,
             "attack": cls.parse_attack(text),
             "hit": cls.parse_damage(text),
-            "usage": UsageParser.parse_usage(text)
+            "usage": UsageParser.parse_usage(name)
         }

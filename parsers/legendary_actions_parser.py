@@ -20,7 +20,8 @@ class LegendaryActionsParser(BaseParser):
         }
         
         for para in paragraphs:
-            name, description = cls.split_name_description(para)
+            title, description = cls.split_name_description(para)
+            name, _ = cls.extract_parenthetical(title)
             
             # Parse cost if specified
             cost_match = re.search(r"\(costs (\d+) actions\)", name.lower())
@@ -31,7 +32,7 @@ class LegendaryActionsParser(BaseParser):
                 "name": name.strip(),
                 "description": description,
                 "cost": cost,
-                "usage": UsageParser.parse_usage(description)
+                "usage": UsageParser.parse_usage(title)
             })
         
         return legendary_actions

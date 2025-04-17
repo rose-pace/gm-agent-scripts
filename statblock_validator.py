@@ -2,9 +2,8 @@ from pydantic import BaseModel, field_validator, ValidationInfo
 from typing import List, Optional, Dict
 from datetime import date
 import re
-from validators.action_validators import ActionSet, LegendaryActionSet, LairActionSet, RegionalEffect, RegionalEffects
+from validators.action_validators import ActionSet, LegendaryActionSet, LairActionSet, RegionalEffects
 from validators.spellcasting_validators import SpellcastingTrait
-from validators.ability_validators import calculate_proficiency_bonus
 from validators.challenge_rating_validators import ChallengeRating
 from parsers.damage_type_parser import DamageTypeParser
 
@@ -20,9 +19,16 @@ class Metadata(BaseModel):
 class CreatureInfo(BaseModel):
     size: str
     type: str
-    subtypes: Optional[List[str]] = None
+    subtype: Optional[str] = None
     alignment: str
-    challenge_rating: ChallengeRating
+    cr: ChallengeRating
+
+    @field_validator('alignment')
+    @classmethod
+    def validate_alignment(cls, v: str) -> str:
+        if not re.match(r'^(lawful|neutral|chaotic)? ?(good|neutral|evil)?$', v) and v != 'unaligned':
+            raise ValueError('Invalid alignment')
+        return v
 
 class ArmorClass(BaseModel):
     value: int
@@ -51,6 +57,30 @@ class CoreStats(BaseModel):
     speed: Speed
     initiative: Initiative
 
+    @field_validator('armor_class')
+    @classmethod
+    def validate_armor_class(cls, v: ArmorClass) -> int:
+        if not (0 <= v.value <= 30):
+            raise ValueError('Armor class must be between 0 and 30')
+        return v
+
+    @field_validator('hit_points')
+    @classmethod
+    def validate_hit_points(cls, v: HitPoints) -> int:
+        if v.average < 1:
+            raise ValueError('Hit points must be at least 1')
+        return v
+
+    @field_validator('speed')
+    @classmethod
+    def validate_speed(cls, v: Speed) -> dict:
+        for key, value in v.model_dump().items():
+            if value is None:
+                continue
+            if key in ['walk', 'fly', 'swim', 'burrow', 'climb'] and (value % 5 != 0 or not (0 <= value <= 120)):
+                raise ValueError(f'{key} speed must be a multiple of 5 and between 0 and 120')
+        return v
+
 class AbilityScore(BaseModel):
     score: int
     modifier: int
@@ -72,6 +102,28 @@ class Defenses(BaseModel):
     damage_resistances: Optional[List[str]] = None
     damage_immunities: Optional[List[str]] = None
     condition_immunities: Optional[List[str]] = None
+
+    @field_validator('damage_resistances')
+    @classmethod
+    def validate_damage_resistances(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is None:
+            return v
+        
+        for resistance in v:
+            if not DamageTypeParser.validate_damage_type(resistance):
+                raise ValueError(f'Invalid damage resistance type: {resistance}')
+        return v
+
+    @field_validator('damage_immunities')
+    @classmethod
+    def validate_damage_immunities(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v is None:
+            return v
+        
+        for immunity in v:
+            if not DamageTypeParser.validate_damage_type(immunity):
+                raise ValueError(f'Invalid damage immunity type: {immunity}')
+        return v
 
 class Senses(BaseModel):
     darkvision: Optional[int] = None
@@ -99,7 +151,7 @@ class StatBlockValidator(BaseModel):
     creature_info: CreatureInfo
     core_stats: CoreStats    
     abilities: Dict[str, AbilityScore]
-    proficiency: Proficiencies
+    proficiencies: Proficiencies
     defenses: Optional[Defenses]    
     senses: Senses
     languages: Languages
@@ -111,58 +163,6 @@ class StatBlockValidator(BaseModel):
     regional_effects: Optional[RegionalEffects] = None
     description: Optional[Description] = None
     additional_info: Optional[Dict[str, Optional[List[str]]]] = None
-
-    @field_validator('alignment')
-    @classmethod
-    def validate_alignment(cls, v: str) -> str:
-        if not re.match(r'^(lawful|neutral|chaotic)? ?(good|neutral|evil)?$', v) and v != 'unaligned':
-            raise ValueError('Invalid alignment')
-        return v
-
-    @field_validator('armor_class')
-    @classmethod
-    def validate_armor_class(cls, v: ArmorClass) -> int:
-        if not (0 <= v.value <= 30):
-            raise ValueError('Armor class must be between 0 and 30')
-        return v
-
-    @field_validator('hit_points')
-    @classmethod
-    def validate_hit_points(cls, v: HitPoints) -> int:
-        if v.average < 1:
-            raise ValueError('Hit points must be at least 1')
-        return v
-
-    @field_validator('speed')
-    @classmethod
-    def validate_speed(cls, v: Speed) -> dict:
-        for key, value in v.model_dump().items():
-            if value is None:
-                continue
-            if key in ['walk', 'fly', 'swim', 'burrow', 'climb'] and (value % 5 != 0 or not (0 <= value <= 120)):
-                raise ValueError(f'{key} speed must be a multiple of 5 and between 0 and 120')
-        return v
-
-    @field_validator('proficiency_bonus', mode='before')
-    @classmethod
-    def validate_proficiency_bonus(cls, v: Optional[int], info: ValidationInfo) -> int:
-        cr = info.data.get('challenge_rating')
-        if cr is None:
-            raise ValueError('Challenge rating is required to validate proficiency bonus')
-            
-        rating = cr.rating
-        if isinstance(rating, str):
-            # Handle fraction strings
-            if '/' in rating:
-                num, denom = rating.split('/')
-                rating = float(int(num) / int(denom))
-            else:
-                rating = float(rating)
-                
-        expected = calculate_proficiency_bonus(rating)
-        if v is not None and v != expected:
-            raise ValueError(f'Proficiency bonus {v} does not match CR {rating} (should be {expected})')
-        return expected
 
     @field_validator('senses')
     @classmethod
@@ -198,28 +198,6 @@ class StatBlockValidator(BaseModel):
                         
                         if save_dc != expected_dc:
                             raise ValueError(f'Save DC {save_dc} does not match expected DC {expected_dc} for {effect.name}')
-        return v
-
-    @field_validator('damage_resistances')
-    @classmethod
-    def validate_damage_resistances(cls, v: Optional[List[str]]) -> Optional[List[str]]:
-        if v is None:
-            return v
-        
-        for resistance in v:
-            if not DamageTypeParser.validate_damage_type(resistance):
-                raise ValueError(f'Invalid damage resistance type: {resistance}')
-        return v
-
-    @field_validator('damage_immunities')
-    @classmethod
-    def validate_damage_immunities(cls, v: Optional[List[str]]) -> Optional[List[str]]:
-        if v is None:
-            return v
-        
-        for immunity in v:
-            if not DamageTypeParser.validate_damage_type(immunity):
-                raise ValueError(f'Invalid damage immunity type: {immunity}')
         return v
 
     class Config:

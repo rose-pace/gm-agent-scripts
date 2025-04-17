@@ -75,7 +75,7 @@ class SpellcastingTrait(BaseModel):
         # Validate DC matches ability modifier + proficiency + 8
         ability_mod = info.data.get('base_modifier')
         if ability_mod is not None:
-            proficiency = info.data.get('proficiency_bonus', 2)  # Default to 2 if not provided
+            proficiency = info.data['proficiencies'].get('bonus', 2)  # Default to 2 if not provided
             expected_dc = 8 + ability_mod + proficiency
             if v != expected_dc:
                 raise ValueError(f'DC {v} does not match calculated DC {expected_dc}')
@@ -89,7 +89,7 @@ class SpellcastingTrait(BaseModel):
         # Validate attack bonus matches ability modifier + proficiency
         ability_mod = info.data.get('base_modifier')
         if ability_mod is not None:
-            proficiency = info.data.get('proficiency_bonus', 2)
+            proficiency = info.data['proficiencies'].get('bonus', 2)
             expected_bonus = ability_mod + proficiency
             if v != expected_bonus:
                 raise ValueError(f'Attack bonus {v} does not match calculated bonus {expected_bonus}')

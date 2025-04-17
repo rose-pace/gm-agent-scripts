@@ -18,8 +18,7 @@ metadata:
 creature_info:
   size: enum  # [Tiny, Small, Medium, Large, Huge, Gargantuan]
   type: string  # Base creature type
-  subtypes: 
-    - string  # Optional subtypes in parentheses
+  subtype: string  # Optional subtype in parentheses
   alignment: string
   cr:
     rating: number | fraction  # Challenge rating number
